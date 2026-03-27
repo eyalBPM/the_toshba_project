@@ -57,7 +57,10 @@
       "Bash(mkdir -p \"D:/DropBox/BPM Dropbox/BPM/04_Team_Folders_Link to use/אייל/אישי/פיתוח/the_toshba_project/app/api/admin/users/[userId]/grant-senior\")",
       "Bash(mkdir -p \"D:/DropBox/BPM Dropbox/BPM/04_Team_Folders_Link to use/אייל/אישי/פיתוח/the_toshba_project/app/admin/minor-changes/[id]\")",
       "Bash(mkdir -p \"D:/DropBox/BPM Dropbox/BPM/04_Team_Folders_Link to use/אייל/אישי/פיתוח/the_toshba_project/app/admin/images/[id]\")",
-      "Bash(find 'D:\\\\DropBox\\\\BPM Dropbox\\\\BPM\\\\04_Team_Folders_Link to use\\\\אייל\\\\אישי\\\\פיתוח\\\\the_toshba_project\\\\application\\\\print-list' -name *.ts)"
+      "Bash(find 'D:\\\\DropBox\\\\BPM Dropbox\\\\BPM\\\\04_Team_Folders_Link to use\\\\אייל\\\\אישי\\\\פיתוח\\\\the_toshba_project\\\\application\\\\print-list' -name *.ts)",
+      "Bash(find 'D:\\\\DropBox\\\\BPM Dropbox\\\\BPM\\\\04_Team_Folders_Link to use\\\\אייל\\\\אישי\\\\פיתוח\\\\the_toshba_project' -type f \\\\\\(-name *auth* -o -name *session* -o -name *provider* \\\\\\))",
+      "Bash(grep -E \"^-.*\\\\.\\(ts|tsx\\)$\")",
+      "Bash(grep -r \"requireAuth\\\\|requireRole\\\\|requireVerified\" 'D:\\\\DropBox\\\\BPM Dropbox\\\\BPM\\\\04_Team_Folders_Link to use\\\\אייל\\\\אישי\\\\פיתוח\\\\the_toshba_project/app' --include=*.ts --include=*.tsx)"
     ]
   }
 }

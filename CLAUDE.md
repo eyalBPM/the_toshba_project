@@ -83,6 +83,7 @@ The system MUST follow a layered architecture:
 - Domain must not depend on Prisma
 - API routes must be thin
 - Complex logic must be extracted
+- The client must communicate exclusively with the project's internal API. It must not make any direct requests to external services or third-party endpoints.
 
 ---
 
