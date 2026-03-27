@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useSefariaText } from '@/ui/hooks/use-sefaria-text';
+import { useSourceText } from '@/ui/hooks/use-source-text';
 
 interface SourceTooltipProps {
   path: string;
@@ -10,7 +10,7 @@ interface SourceTooltipProps {
 
 export function SourceTooltip({ path, children }: SourceTooltipProps) {
   const [hovered, setHovered] = useState(false);
-  const { text, loading } = useSefariaText(path, hovered);
+  const { text, loading } = useSourceText(path, hovered);
 
   return (
     <span
@@ -27,7 +27,10 @@ export function SourceTooltip({ path, children }: SourceTooltipProps) {
           {loading ? (
             <span className="text-gray-400">טוען...</span>
           ) : text ? (
-            <span className="text-gray-800 leading-relaxed">{text.slice(0, 300)}{text.length > 300 ? '…' : ''}</span>
+            <span className="text-gray-800 leading-relaxed">
+              {text.slice(0, 300)}
+              {text.length > 300 ? '…' : ''}
+            </span>
           ) : (
             <span className="text-gray-400">לא נמצא מקור</span>
           )}

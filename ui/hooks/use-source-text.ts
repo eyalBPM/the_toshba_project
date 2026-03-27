@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 // Module-level cache avoids re-fetching on repeated hover
 const cache = new Map<string, string>();
 
-export function useSefariaText(
+export function useSourceText(
   path: string | null,
   enabled: boolean,
 ): { text: string | null; loading: boolean } {
@@ -20,14 +20,15 @@ export function useSefariaText(
     }
     let cancelled = false;
     setLoading(true);
-    fetch(`https://www.sefaria.org/api/texts/${encodeURIComponent(path)}?lang=he&context=0`)
+    fetch(`/api/source-text?path=${encodeURIComponent(path)}`)
       .then((res) => res.json())
       .then((data) => {
         if (cancelled) return;
-        // Sefaria returns `he` as an array of strings or a string
-        const heArr = data?.he;
-        const heText = Array.isArray(heArr) ? heArr.join(' ') : (heArr ?? '');
-        const cleaned = String(heText).replace(/<[^>]+>/g, '').trim();
+        if (!data.success) {
+          setText(null);
+          return;
+        }
+        const cleaned = data.data.text ?? '';
         cache.set(path, cleaned);
         setText(cleaned);
       })
