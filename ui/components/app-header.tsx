@@ -7,9 +7,7 @@ import { NotificationBell } from './notification-bell';
 export function AppHeader() {
   const { data: session } = useSession();
 
-  if (!session?.user) return null;
-
-  const user = session.user as { name?: string; role?: string };
+  const user = session?.user as { name?: string; role?: string } | undefined;
 
   return (
     <header className="border-b border-gray-200 bg-white" dir="rtl">
@@ -19,22 +17,30 @@ export function AppHeader() {
         </Link>
 
         <div className="flex items-center gap-3">
-          <Link href="/drafts" className="text-sm text-gray-600 hover:text-gray-900">
-            טיוטות
-          </Link>
-          {(user.role === 'Admin' || user.role === 'Senior') && (
-            <Link href="/admin" className="text-sm text-gray-600 hover:text-gray-900">
-              ניהול
+          {user ? (
+            <>
+              <Link href="/drafts" className="text-sm text-gray-600 hover:text-gray-900">
+                טיוטות
+              </Link>
+              {(user.role === 'Admin' || user.role === 'Senior') && (
+                <Link href="/admin" className="text-sm text-gray-600 hover:text-gray-900">
+                  ניהול
+                </Link>
+              )}
+              <NotificationBell />
+              <span className="text-sm text-gray-500">{user.name}</span>
+              <button
+                onClick={() => signOut({ callbackUrl: '/' })}
+                className="text-xs text-gray-400 hover:text-gray-600"
+              >
+                יציאה
+              </button>
+            </>
+          ) : (
+            <Link href="/login" className="text-sm text-blue-600 hover:text-blue-800">
+              התחברות
             </Link>
           )}
-          <NotificationBell />
-          <span className="text-sm text-gray-500">{user.name}</span>
-          <button
-            onClick={() => signOut({ callbackUrl: '/' })}
-            className="text-xs text-gray-400 hover:text-gray-600"
-          >
-            יציאה
-          </button>
         </div>
       </div>
     </header>
