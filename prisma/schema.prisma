@@ -1,0 +1,388 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../db/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────
+
+enum UserStatus {
+  PendingVerification
+  VerifiedUser
+}
+
+enum UserRole {
+  User
+  Admin
+  Moderator
+  Senior
+}
+
+enum RevisionStatus {
+  Draft
+  Pending
+  Approved
+  Rejected
+}
+
+enum ImageStatus {
+  PendingApproval
+  Approved
+  Rejected
+}
+
+enum ClusterVisibility {
+  Private
+  Shared
+  Public
+}
+
+enum VerificationRequestStatus {
+  Pending
+  Approved
+  Rejected
+}
+
+enum MinorChangeRequestStatus {
+  Pending
+  Approved
+  Rejected
+  Used
+}
+
+// ─── User ────────────────────────────────────────────────
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String?
+  name      String
+  googleId  String?    @unique
+  status    UserStatus @default(PendingVerification)
+  role      UserRole   @default(User)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  createdArticles          Article[]
+  createdRevisions         ArticleRevision[]
+  agreements               Agreement[]
+  uploadedImages           Image[]
+  ownedClusters            OpinionCluster[]       @relation("ClusterOwner")
+  clusterAccess            OpinionClusterAccess[]
+  opinionResponses         OpinionResponse[]
+  printLists               PrintList[]
+  sentVerificationRequests VerificationRequest[]  @relation("VerificationRequester")
+  receivedVerificationReqs VerificationRequest[]  @relation("VerificationVerifier")
+  verificationsReceived    UserVerification[]     @relation("VerifiedUser")
+  verificationsGiven       UserVerification[]     @relation("VerifiedByUser")
+  auditLogs                AuditLog[]
+  notifications            Notification[]
+  missingSources           MissingSources[]
+  minorChangeRequestsMade     MinorChangeRequest[] @relation("MinorChangeRequester")
+  minorChangeRequestsReviewed MinorChangeRequest[] @relation("MinorChangeReviewer")
+
+  @@index([status])
+  @@index([role])
+}
+
+// ─── ArticleSnapshot ─────────────────────────────────────
+
+model ArticleSnapshot {
+  id                 String @id @default(cuid())
+  sourcesSnapshot    Json   @default("[]")
+  topicsSnapshot     Json   @default("[]")
+  sagesSnapshot      Json   @default("[]")
+  referencesSnapshot Json   @default("[]")
+  contentLength      Int    @default(0)
+
+  revision ArticleRevision?
+  article  Article?
+}
+
+// ─── Article ─────────────────────────────────────────────
+
+model Article {
+  id                String   @id @default(cuid())
+  title             String
+  slug              String   @unique
+  currentRevisionId String?  @unique
+  snapshotId        String?  @unique
+  createdByUserId   String
+  createdAt         DateTime @default(now())
+
+  currentRevision ArticleRevision? @relation("CurrentRevision", fields: [currentRevisionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  snapshot        ArticleSnapshot? @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+  createdBy       User             @relation(fields: [createdByUserId], references: [id])
+  revisions       ArticleRevision[] @relation("ArticleRevisions")
+
+  @@index([createdByUserId])
+  @@index([createdAt])
+}
+
+// ─── ArticleRevision ─────────────────────────────────────
+
+model ArticleRevision {
+  id                 String         @id @default(cuid())
+  articleId          String?
+  title              String
+  content            Json           @default("{}")
+  status             RevisionStatus @default(Draft)
+  createdByUserId    String
+  snapshotId         String         @unique
+  hadMinorChangeEdit Boolean        @default(false)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  article              Article?              @relation("ArticleRevisions", fields: [articleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  currentOfArticle     Article?              @relation("CurrentRevision")
+  snapshot             ArticleSnapshot       @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  createdBy            User                  @relation(fields: [createdByUserId], references: [id])
+  agreements           Agreement[]
+  images               Image[]
+  missingSources       MissingSources[]
+  opinionResponses     OpinionResponse[]
+  minorChangeRequests  MinorChangeRequest[]
+
+  @@index([articleId])
+  @@index([status])
+  @@index([createdByUserId])
+  @@index([createdAt])
+  @@index([articleId, status])
+}
+
+// ─── Source (predefined lookup table) ────────────────────
+
+model Source {
+  id    String @id @default(cuid())
+  book  String
+  label String
+  path  String
+  index Int
+
+  @@index([book])
+  @@index([index])
+}
+
+// ─── Topic ───────────────────────────────────────────────
+
+model Topic {
+  id   String @id @default(cuid())
+  text String @unique
+}
+
+// ─── Sage ────────────────────────────────────────────────
+
+model Sage {
+  id   String @id @default(cuid())
+  text String @unique
+}
+
+// ─── MissingSources ──────────────────────────────────────
+
+model MissingSources {
+  id              String   @id @default(cuid())
+  revisionId      String
+  citationNumber  Int
+  text            String
+  createdByUserId String
+  createdAt       DateTime @default(now())
+
+  revision  ArticleRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  createdBy User            @relation(fields: [createdByUserId], references: [id])
+
+  @@index([revisionId])
+}
+
+// ─── Image ───────────────────────────────────────────────
+
+model Image {
+  id               String      @id @default(cuid())
+  revisionId       String
+  url              String
+  uploadedByUserId String
+  status           ImageStatus @default(PendingApproval)
+  createdAt        DateTime    @default(now())
+
+  revision   ArticleRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  uploadedBy User            @relation(fields: [uploadedByUserId], references: [id])
+
+  @@index([revisionId])
+  @@index([status])
+  @@index([uploadedByUserId])
+}
+
+// ─── Agreement ───────────────────────────────────────────
+
+model Agreement {
+  id         String   @id @default(cuid())
+  revisionId String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  revision ArticleRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  user     User            @relation(fields: [userId], references: [id])
+
+  @@unique([revisionId, userId])
+  @@index([revisionId])
+  @@index([userId])
+}
+
+// ─── OpinionCluster ──────────────────────────────────────
+
+model OpinionCluster {
+  id           String            @id @default(cuid())
+  title        String
+  introduction String?
+  ownerUserId  String
+  visibility   ClusterVisibility @default(Private)
+  createdAt    DateTime          @default(now())
+
+  owner     User                   @relation("ClusterOwner", fields: [ownerUserId], references: [id])
+  access    OpinionClusterAccess[]
+  responses OpinionResponse[]
+
+  @@index([ownerUserId])
+  @@index([visibility])
+}
+
+// ─── OpinionClusterAccess ────────────────────────────────
+
+model OpinionClusterAccess {
+  id        String @id @default(cuid())
+  clusterId String
+  userId    String
+
+  cluster OpinionCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id])
+
+  @@unique([clusterId, userId])
+}
+
+// ─── OpinionResponse ─────────────────────────────────────
+
+model OpinionResponse {
+  id         String   @id @default(cuid())
+  clusterId  String
+  revisionId String
+  userId     String
+  content    Json     @default("{}")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  cluster  OpinionCluster  @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  revision ArticleRevision @relation(fields: [revisionId], references: [id])
+  user     User            @relation(fields: [userId], references: [id])
+
+  @@index([clusterId])
+  @@index([revisionId])
+  @@index([userId])
+}
+
+// ─── PrintList ───────────────────────────────────────────
+
+model PrintList {
+  id        String   @id @default(cuid())
+  userId    String
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+// ─── VerificationRequest ─────────────────────────────────
+
+model VerificationRequest {
+  id                  String                    @id @default(cuid())
+  requestingUserId    String
+  requestedVerifierId String
+  message             String                    @db.Text
+  status              VerificationRequestStatus @default(Pending)
+  createdAt           DateTime                  @default(now())
+
+  requester User @relation("VerificationRequester", fields: [requestingUserId], references: [id])
+  verifier  User @relation("VerificationVerifier", fields: [requestedVerifierId], references: [id])
+
+  @@index([requestingUserId])
+  @@index([requestedVerifierId])
+  @@index([status])
+}
+
+// ─── UserVerification ────────────────────────────────────
+
+model UserVerification {
+  id               String   @id @default(cuid())
+  verifiedUserId   String
+  verifiedByUserId String
+  createdAt        DateTime @default(now())
+
+  verifiedUser User @relation("VerifiedUser", fields: [verifiedUserId], references: [id])
+  verifiedBy   User @relation("VerifiedByUser", fields: [verifiedByUserId], references: [id])
+
+  @@index([verifiedUserId])
+  @@index([verifiedByUserId])
+}
+
+// ─── MinorChangeRequest ─────────────────────────────────
+
+model MinorChangeRequest {
+  id               String                   @id @default(cuid())
+  revisionId       String
+  requestingUserId String
+  message          String                   @db.Text
+  status           MinorChangeRequestStatus @default(Pending)
+  reviewedByUserId String?
+  reviewNote       String?                  @db.Text
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  revision    ArticleRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  requestedBy User            @relation("MinorChangeRequester", fields: [requestingUserId], references: [id])
+  reviewedBy  User?           @relation("MinorChangeReviewer", fields: [reviewedByUserId], references: [id])
+
+  @@index([revisionId, status])
+  @@index([status])
+  @@index([requestingUserId])
+}
+
+// ─── AuditLog ────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String
+  entityType String
+  entityId   String
+  userId     String
+  metadata   Json     @default("{}")
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ─── Notification ────────────────────────────────────────
+
+model Notification {
+  id         String   @id @default(cuid())
+  userId     String
+  type       String
+  entityType String
+  entityId   String
+  message    String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+}
