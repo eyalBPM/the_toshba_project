@@ -2,12 +2,26 @@
 
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
+import { useQuery } from '@tanstack/react-query';
 import { NotificationBell } from './notification-bell';
+
+async function fetchCurrentUser() {
+  const res = await fetch('/api/me');
+  if (!res.ok) return null;
+  const json = await res.json();
+  return json.data as { id: string; role: string; status: string };
+}
 
 export function AppHeader() {
   const { data: session } = useSession();
 
-  const user = session?.user as { name?: string; role?: string } | undefined;
+  const sessionUser = session?.user as { name?: string } | undefined;
+
+  const { data: currentUser } = useQuery({
+    queryKey: ['me'],
+    queryFn: fetchCurrentUser,
+    enabled: !!sessionUser,
+  });
 
   return (
     <header className="border-b border-gray-200 bg-white" dir="rtl">
@@ -17,18 +31,18 @@ export function AppHeader() {
         </Link>
 
         <div className="flex items-center gap-3">
-          {user ? (
+          {sessionUser ? (
             <>
               <Link href="/drafts" className="text-sm text-gray-600 hover:text-gray-900">
                 טיוטות
               </Link>
-              {(user.role === 'Admin' || user.role === 'Senior') && (
+              {(currentUser?.role === 'Admin' || currentUser?.role === 'Senior') && (
                 <Link href="/admin" className="text-sm text-gray-600 hover:text-gray-900">
                   ניהול
                 </Link>
               )}
               <NotificationBell />
-              <span className="text-sm text-gray-500">{user.name}</span>
+              <span className="text-sm text-gray-500">{sessionUser.name}</span>
               <button
                 onClick={() => signOut({ callbackUrl: '/' })}
                 className="text-xs text-gray-400 hover:text-gray-600"

@@ -1,4 +1,5 @@
 import { auth } from './auth';
+import { findUserById } from '@/db/user-repository';
 import type { UserRole, UserStatus } from '@/domain/types';
 
 export interface SessionUser {
@@ -12,7 +13,17 @@ export interface SessionUser {
 export async function getCurrentUser(): Promise<SessionUser | null> {
   const session = await auth();
   if (!session?.user) return null;
-  return session.user as SessionUser;
+
+  const dbUser = await findUserById(session.user.id);
+  if (!dbUser) return null;
+
+  return {
+    id: dbUser.id,
+    email: dbUser.email,
+    name: dbUser.name,
+    status: dbUser.status as UserStatus,
+    role: dbUser.role as UserRole,
+  };
 }
 
 export async function requireAuth(): Promise<SessionUser> {

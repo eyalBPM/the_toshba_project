@@ -8,30 +8,19 @@ import {
   createUser,
   updateUserGoogleId,
 } from '@/db/user-repository';
-import type { UserRole, UserStatus } from '@/domain/types';
-
 declare module 'next-auth' {
   interface Session {
     user: {
       id: string;
       email: string;
       name: string;
-      status: UserStatus;
-      role: UserRole;
     };
-  }
-
-  interface User {
-    status: UserStatus;
-    role: UserRole;
   }
 }
 
 declare module '@auth/core/jwt' {
   interface JWT {
     id: string;
-    status: UserStatus;
-    role: UserRole;
   }
 }
 
@@ -63,8 +52,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: user.id,
           email: user.email,
           name: user.name,
-          status: user.status as UserStatus,
-          role: user.role as UserRole,
         };
       },
     }),
@@ -85,8 +72,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           user.id = dbUser.id;
           user.name = dbUser.name;
           user.email = dbUser.email;
-          user.status = dbUser.status as UserStatus;
-          user.role = dbUser.role as UserRole;
           return true;
         }
 
@@ -97,8 +82,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           user.id = dbUser.id;
           user.name = dbUser.name;
           user.email = dbUser.email;
-          user.status = dbUser.status as UserStatus;
-          user.role = dbUser.role as UserRole;
           return true;
         }
 
@@ -107,8 +90,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         user.id = dbUser.id;
         user.name = dbUser.name;
         user.email = dbUser.email;
-        user.status = dbUser.status as UserStatus;
-        user.role = dbUser.role as UserRole;
         return true;
       }
 
@@ -118,8 +99,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id!;
-        token.status = user.status;
-        token.role = user.role;
       }
       return token;
     },
@@ -130,8 +109,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         id: token.id,
         email: token.email!,
         name: token.name!,
-        status: token.status,
-        role: token.role,
       };
       return session;
     },
