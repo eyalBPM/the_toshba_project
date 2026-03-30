@@ -25,7 +25,7 @@ export function useArticlesSearch(query: string): { results: ArticleResult[]; lo
         const res = await fetch(`/api/articles?search=${encodeURIComponent(query)}&limit=20`);
         if (res.ok) {
           const json = await res.json();
-          setResults((json.data ?? []) as ArticleResult[]);
+          setResults((json.data?.items ?? []) as ArticleResult[]);
         }
       } finally {
         setLoading(false);
