@@ -45,11 +45,11 @@ export default async function EditRevisionPage({
 
   // MCR mode: fetch existing MCR data if editing
   const editorMode: EditorMode = mode === 'mcr' ? 'mcr' : 'normal';
-  let mcrData: { id: string; title: string | null; content: unknown; snapshotData: unknown } | null = null;
+  let mcrData: { id: string; title: string | null; content: unknown; snapshotData: unknown; message: string | null } | null = null;
   if (editorMode === 'mcr' && mcrId) {
     const existingMcr = await findMinorChangeRequestById(mcrId);
     if (existingMcr && existingMcr.status === 'Pending') {
-      mcrData = { id: existingMcr.id, title: existingMcr.title, content: existingMcr.content, snapshotData: existingMcr.snapshotData };
+      mcrData = { id: existingMcr.id, title: existingMcr.title, content: existingMcr.content, snapshotData: existingMcr.snapshotData, message: existingMcr.message };
     }
   }
 
@@ -67,11 +67,13 @@ export default async function EditRevisionPage({
         status={revision.status}
         agreementCount={agreementCount}
         deleteRedirectUrl="/articles"
+        viewUrl={`/revisions/${revisionId}`}
         editorMode={editorMode}
         mcrId={mcrData?.id}
         mcrTitle={mcrData?.title ?? undefined}
         mcrContent={mcrData?.content ?? undefined}
         mcrSnapshotData={mcrData?.snapshotData ?? undefined}
+        mcrMessage={mcrData?.message ?? undefined}
       />
     </main>
   );

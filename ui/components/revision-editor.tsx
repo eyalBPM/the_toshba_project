@@ -42,11 +42,13 @@ interface RevisionEditorProps {
   status: string;
   agreementCount?: number;
   deleteRedirectUrl: string;
+  viewUrl: string;
   editorMode?: EditorMode;
   mcrId?: string;
   mcrTitle?: string;
   mcrContent?: unknown;
   mcrSnapshotData?: unknown;
+  mcrMessage?: string;
 }
 
 export function RevisionEditor({
@@ -60,11 +62,13 @@ export function RevisionEditor({
   status,
   agreementCount = 0,
   deleteRedirectUrl,
+  viewUrl,
   editorMode = 'normal',
   mcrId,
   mcrTitle,
   mcrContent,
   mcrSnapshotData,
+  mcrMessage,
 }: RevisionEditorProps) {
   const router = useRouter();
   const isMcrMode = editorMode === 'mcr';
@@ -284,6 +288,7 @@ export function RevisionEditor({
         <McrEditorActions
           revisionId={revisionId}
           mcrId={mcrId}
+          initialMessage={mcrMessage}
           buildPayload={buildPayload}
         />
       ) : (
@@ -291,6 +296,7 @@ export function RevisionEditor({
           revisionId={revisionId}
           status={status}
           deleteRedirectUrl={deleteRedirectUrl}
+          viewUrl={viewUrl}
           buildPayload={buildPayload}
         />
       )}

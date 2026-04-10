@@ -8,6 +8,7 @@ import { AgreementButton } from '@/ui/components/agreement-button';
 import { RevisionActions } from '@/ui/components/revision-actions';
 import { MinorChangeRequestForm } from '@/ui/components/minor-change-request-form';
 import { MinorChangeStatus } from '@/ui/components/minor-change-status';
+import { findPendingRequestByRevision } from '@/db/minor-change-repository';
 import { MinorChangeReview } from '@/ui/components/minor-change-review';
 import { RevisionImages } from '@/ui/components/revision-images';
 import { EditRevisionButton } from '@/ui/components/edit-revision-button';
@@ -32,6 +33,9 @@ export default async function RevisionFallbackPage({
 
   const isOwner = currentUser?.id === revision.createdByUserId;
   const canEdit = isOwner && (revision.status === 'Draft' || revision.status === 'Pending');
+  const pendingMcr = isOwner && revision.status === 'Pending'
+    ? await findPendingRequestByRevision(revisionId)
+    : null;
 
   const topics = Array.isArray(revision.snapshot.topicsSnapshot)
     ? (revision.snapshot.topicsSnapshot as Array<{ text: string }>)
@@ -106,7 +110,12 @@ export default async function RevisionFallbackPage({
               />
             </>
           )}
-          {isOwner && <MinorChangeRequestForm revisionId={revisionId} />}
+          {isOwner && (
+            <MinorChangeRequestForm
+              editUrl={`/revisions/${revisionId}/edit`}
+              pendingMcrId={pendingMcr?.id}
+            />
+          )}
         </div>
       )}
     </main>

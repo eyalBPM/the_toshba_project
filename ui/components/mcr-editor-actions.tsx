@@ -7,14 +7,15 @@ import { ConfirmDialog } from './confirm-dialog';
 interface McrEditorActionsProps {
   revisionId: string;
   mcrId?: string;
+  initialMessage?: string;
   buildPayload: () => { title: string; content: object; snapshot: unknown };
 }
 
-export function McrEditorActions({ revisionId, mcrId, buildPayload }: McrEditorActionsProps) {
+export function McrEditorActions({ revisionId, mcrId, initialMessage, buildPayload }: McrEditorActionsProps) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(initialMessage ?? '');
   const [showRaceDialog, setShowRaceDialog] = useState(false);
   const [racePayload, setRacePayload] = useState<object | null>(null);
 

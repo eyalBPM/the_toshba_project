@@ -8,6 +8,7 @@ interface RevisionEditorActionsProps {
   revisionId: string;
   status: string;
   deleteRedirectUrl: string;
+  viewUrl: string;
   buildPayload: () => { title: string; content: object; snapshot: unknown };
 }
 
@@ -15,6 +16,7 @@ export function RevisionEditorActions({
   revisionId,
   status,
   deleteRedirectUrl,
+  viewUrl,
   buildPayload,
 }: RevisionEditorActionsProps) {
   const router = useRouter();
@@ -49,7 +51,7 @@ export function RevisionEditorActions({
         setError(json.error?.message ?? 'שגיאה בהגשה');
         return;
       }
-      router.refresh();
+      router.push(viewUrl);
     } finally {
       setSubmitting(false);
     }

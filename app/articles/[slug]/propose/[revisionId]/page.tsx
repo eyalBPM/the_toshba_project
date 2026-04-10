@@ -7,6 +7,7 @@ import { StatusBadge } from '@/ui/components/status-badge';
 import { AgreementButton } from '@/ui/components/agreement-button';
 import { RevisionActions } from '@/ui/components/revision-actions';
 import { MinorChangeRequestForm } from '@/ui/components/minor-change-request-form';
+import { findPendingRequestByRevision } from '@/db/minor-change-repository';
 import { RevisionImages } from '@/ui/components/revision-images';
 import { MinorChangeStatus } from '@/ui/components/minor-change-status';
 import { MinorChangeReview } from '@/ui/components/minor-change-review';
@@ -33,6 +34,9 @@ export default async function ProposedRevisionPage({
     : null;
 
   const isOwner = currentUser?.id === revision.createdByUserId;
+  const pendingMcr = isOwner && revision.status === 'Pending'
+    ? await findPendingRequestByRevision(revisionId)
+    : null;
 
   const proposedTopics = Array.isArray(revision.snapshot.topicsSnapshot)
     ? (revision.snapshot.topicsSnapshot as Array<{ text: string }>)
@@ -136,7 +140,10 @@ export default async function ProposedRevisionPage({
           </>
         )}
         {isOwner && revision.status === 'Pending' && (
-          <MinorChangeRequestForm revisionId={revisionId} />
+          <MinorChangeRequestForm
+            editUrl={`/articles/${slug}/propose/${revisionId}/edit`}
+            pendingMcrId={pendingMcr?.id}
+          />
         )}
       </div>
     </main>
