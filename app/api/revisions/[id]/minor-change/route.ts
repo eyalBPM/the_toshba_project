@@ -6,7 +6,7 @@ import { requestMinorChange } from '@/application/minor-change/request-minor-cha
 import { listMinorChangeRequestsByRevision } from '@/db/minor-change-repository';
 
 const createSchema = z.object({
-  message: z.string().min(5, 'Message must be at least 5 characters').optional(),
+  message: z.string().optional(),
   title: z.string().optional(),
   content: z.unknown().optional(),
   snapshotData: z.unknown().optional(),
