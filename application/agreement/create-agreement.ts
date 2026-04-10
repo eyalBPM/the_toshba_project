@@ -7,6 +7,7 @@ import {
   countAgreementsByRevision,
   hasUserAgreed,
 } from '@/db/agreement-repository';
+import { findApprovedRequestByRevision } from '@/db/minor-change-repository';
 import { createAuditLog } from '@/db/audit-log-repository';
 import { createNotification } from '@/db/notification-repository';
 import { performApproval } from '@/application/revision/_perform-approval';
@@ -61,10 +62,11 @@ export async function createAgreement(
 
   let approved = false;
   if (shouldAutoApprove(newCount)) {
+    const approvedMcr = await findApprovedRequestByRevision(input.revisionId);
     await performApproval({
       revision,
       approvedByUserId: 'system',
-      isMinorChange: revision.hadMinorChangeEdit,
+      isMinorChange: !!approvedMcr,
     });
     approved = true;
   }

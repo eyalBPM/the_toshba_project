@@ -21,9 +21,11 @@ const USER_ROLE_LABELS: Record<string, { label: string; variant: BadgeVariant }>
 };
 
 const REQUEST_STATUS_LABELS: Record<string, { label: string; variant: BadgeVariant }> = {
+  Draft: { label: 'טיוטה', variant: 'gray' },
   Pending: { label: 'ממתין', variant: 'yellow' },
   Approved: { label: 'אושר', variant: 'green' },
   Rejected: { label: 'נדחה', variant: 'red' },
+  Obsolete: { label: 'מיושן', variant: 'gray' },
 };
 
 interface StatusBadgeProps {

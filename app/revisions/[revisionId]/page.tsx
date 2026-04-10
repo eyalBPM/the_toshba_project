@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
 import { findRevisionById } from '@/db/revision-repository';
 import { getCurrentUser } from '@/lib/auth-utils';
 import { ContentRenderer } from '@/ui/components/content-renderer';
@@ -11,6 +10,7 @@ import { MinorChangeRequestForm } from '@/ui/components/minor-change-request-for
 import { MinorChangeStatus } from '@/ui/components/minor-change-status';
 import { MinorChangeReview } from '@/ui/components/minor-change-review';
 import { RevisionImages } from '@/ui/components/revision-images';
+import { EditRevisionButton } from '@/ui/components/edit-revision-button';
 
 export default async function RevisionFallbackPage({
   params,
@@ -47,12 +47,10 @@ export default async function RevisionFallbackPage({
         <div className="flex items-center gap-3">
           <StatusBadge type="requestStatus" value={revision.status} />
           {canEdit && (
-            <Link
-              href={`/revisions/${revisionId}/edit`}
-              className="rounded-md bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
-            >
-              ערוך
-            </Link>
+            <EditRevisionButton
+              revisionId={revisionId}
+              editUrl={`/revisions/${revisionId}/edit`}
+            />
           )}
         </div>
       </div>
@@ -61,6 +59,12 @@ export default async function RevisionFallbackPage({
         {revision.createdBy.name} ·{' '}
         {new Date(revision.createdAt).toLocaleDateString('he-IL')}
       </p>
+
+      {revision.status === 'Obsolete' && (
+        <div className="mb-4 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700" dir="rtl">
+          גרסה זו הפכה למיושנת כיוון שגרסה מתחרה אושרה. לא ניתן לערוך אותה.
+        </div>
+      )}
 
       {(topics.length > 0 || sages.length > 0) && (
         <div className="mb-4 text-sm text-gray-600">

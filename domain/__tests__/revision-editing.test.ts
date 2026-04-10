@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { getEditPolicy, canEditRevision } from '../revision/editing';
+import {
+  getEditPolicy,
+  canEditRevision,
+  isEditableStatus,
+  checkRevisionFreshness,
+} from '../revision/editing';
 import type { DomainRevision } from '../types';
 
 function makeRevision(overrides: Partial<DomainRevision> = {}): DomainRevision {
@@ -15,45 +20,46 @@ function makeRevision(overrides: Partial<DomainRevision> = {}): DomainRevision {
 describe('revision editing', () => {
   describe('getEditPolicy', () => {
     it('returns no reset and no warning when 0 agreements', () => {
-      expect(getEditPolicy(0, false)).toEqual({
+      expect(getEditPolicy(0)).toEqual({
         willResetAgreements: false,
         requiresWarning: false,
       });
     });
 
     it('returns reset and warning when agreements > 0', () => {
-      expect(getEditPolicy(5, false)).toEqual({
+      expect(getEditPolicy(5)).toEqual({
         willResetAgreements: true,
         requiresWarning: true,
       });
     });
 
-    it('returns no reset and no warning when minor change approved, even with agreements', () => {
-      expect(getEditPolicy(10, true)).toEqual({
-        willResetAgreements: false,
-        requiresWarning: false,
-      });
-    });
-
-    it('minor change approved with 0 agreements still returns no reset', () => {
-      expect(getEditPolicy(0, true)).toEqual({
-        willResetAgreements: false,
-        requiresWarning: false,
-      });
-    });
-
-    it('resets agreements at exactly 1 agreement without minor change', () => {
-      expect(getEditPolicy(1, false)).toEqual({
+    it('resets agreements at exactly 1 agreement', () => {
+      expect(getEditPolicy(1)).toEqual({
         willResetAgreements: true,
         requiresWarning: true,
       });
     });
+  });
 
-    it('preserves agreements at high count with minor change approved', () => {
-      expect(getEditPolicy(34, true)).toEqual({
-        willResetAgreements: false,
-        requiresWarning: false,
-      });
+  describe('isEditableStatus', () => {
+    it('returns true for Draft', () => {
+      expect(isEditableStatus('Draft')).toBe(true);
+    });
+
+    it('returns true for Pending', () => {
+      expect(isEditableStatus('Pending')).toBe(true);
+    });
+
+    it('returns false for Approved', () => {
+      expect(isEditableStatus('Approved')).toBe(false);
+    });
+
+    it('returns false for Rejected', () => {
+      expect(isEditableStatus('Rejected')).toBe(false);
+    });
+
+    it('returns false for Obsolete', () => {
+      expect(isEditableStatus('Obsolete')).toBe(false);
     });
   });
 
@@ -78,9 +84,54 @@ describe('revision editing', () => {
       expect(result.success).toBe(false);
     });
 
+    it('rejects edit of Obsolete revision', () => {
+      const result = canEditRevision(makeRevision({ status: 'Obsolete' }), 'user-1');
+      expect(result.success).toBe(false);
+    });
+
     it('rejects edit by non-creator', () => {
       const result = canEditRevision(makeRevision(), 'other-user');
       expect(result.success).toBe(false);
+    });
+  });
+
+  describe('checkRevisionFreshness', () => {
+    it('returns editable for Draft by owner', () => {
+      expect(checkRevisionFreshness('Draft', true)).toEqual({ editable: true });
+    });
+
+    it('returns editable for Pending by owner', () => {
+      expect(checkRevisionFreshness('Pending', true)).toEqual({ editable: true });
+    });
+
+    it('returns not editable for Approved with article slug', () => {
+      expect(checkRevisionFreshness('Approved', true, 'my-article')).toEqual({
+        editable: false,
+        reason: 'approved',
+        articleSlug: 'my-article',
+      });
+    });
+
+    it('returns not editable for Rejected', () => {
+      expect(checkRevisionFreshness('Rejected', true)).toEqual({
+        editable: false,
+        reason: 'rejected',
+      });
+    });
+
+    it('returns not editable for Obsolete with article slug', () => {
+      expect(checkRevisionFreshness('Obsolete', true, 'my-article')).toEqual({
+        editable: false,
+        reason: 'obsolete',
+        articleSlug: 'my-article',
+      });
+    });
+
+    it('returns not editable for non-owner', () => {
+      expect(checkRevisionFreshness('Draft', false)).toEqual({
+        editable: false,
+        reason: 'not_owner',
+      });
     });
   });
 });

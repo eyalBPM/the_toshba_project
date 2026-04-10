@@ -1,6 +1,11 @@
 import type { DomainUser, RevisionStatus } from '@/domain/types';
 import { validateTransition } from '@/domain/revision/state-machine';
 import { findRevisionById, updateRevisionStatus } from '@/db/revision-repository';
+import { deleteAgreementsByRevision } from '@/db/agreement-repository';
+import {
+  findPendingRequestByRevision,
+  deleteMinorChangeRequest,
+} from '@/db/minor-change-repository';
 import { createAuditLog } from '@/db/audit-log-repository';
 
 export interface RetractRevisionInput {
@@ -22,6 +27,15 @@ export async function retractRevision(input: RetractRevisionInput): Promise<void
     throw new Error(transition.error);
   }
 
+  // Delete all agreements
+  await deleteAgreementsByRevision(input.revisionId);
+
+  // Delete pending MCR if exists
+  const pendingMcr = await findPendingRequestByRevision(input.revisionId);
+  if (pendingMcr) {
+    await deleteMinorChangeRequest(pendingMcr.id);
+  }
+
   await updateRevisionStatus(input.revisionId, 'Draft');
 
   await createAuditLog({
@@ -29,5 +43,6 @@ export async function retractRevision(input: RetractRevisionInput): Promise<void
     entityType: 'ArticleRevision',
     entityId: input.revisionId,
     userId: input.user.id,
+    metadata: { agreementsDeleted: true, mcrDeleted: !!pendingMcr },
   });
 }

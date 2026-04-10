@@ -9,7 +9,6 @@ export interface DbRevision {
   status: string;
   createdByUserId: string;
   snapshotId: string;
-  hadMinorChangeEdit: boolean;
   createdAt: Date;
   updatedAt: Date;
   snapshot: DbArticleSnapshot;
@@ -34,7 +33,6 @@ const REVISION_SELECT = {
   status: true,
   createdByUserId: true,
   snapshotId: true,
-  hadMinorChangeEdit: true,
   createdAt: true,
   updatedAt: true,
   snapshot: { select: SNAPSHOT_SELECT },
@@ -94,11 +92,15 @@ export async function listPendingRevisionsByArticle(articleId: string): Promise<
 
 export async function listRevisionsByUser(
   userId: string,
-  opts: { includePending?: boolean } = {},
+  opts: { includePending?: boolean; includeObsolete?: boolean } = {},
 ): Promise<DbRevision[]> {
-  const statusFilter = opts.includePending
-    ? { status: { in: ['Draft', 'Pending'] as string[] } }
-    : { status: 'Draft' as string };
+  const statuses: string[] = ['Draft'];
+  if (opts.includePending) statuses.push('Pending');
+  if (opts.includeObsolete) statuses.push('Obsolete');
+
+  const statusFilter = statuses.length === 1
+    ? { status: statuses[0] }
+    : { status: { in: statuses } };
 
   return prisma.articleRevision.findMany({
     where: { createdByUserId: userId, ...statusFilter },
@@ -192,9 +194,31 @@ export async function deleteRevision(id: string): Promise<void> {
   await prisma.articleRevision.delete({ where: { id } });
 }
 
-export async function markRevisionMinorChangeEdit(id: string): Promise<void> {
-  await prisma.articleRevision.update({
+export async function listDraftRevisionsByArticle(articleId: string): Promise<DbRevision[]> {
+  return prisma.articleRevision.findMany({
+    where: { articleId, status: 'Draft' },
+    select: REVISION_SELECT,
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+export interface RevisionStatusInfo {
+  id: string;
+  status: string;
+  articleId: string | null;
+  createdByUserId: string;
+  article: { slug: string } | null;
+}
+
+export async function findRevisionStatusById(id: string): Promise<RevisionStatusInfo | null> {
+  return prisma.articleRevision.findUnique({
     where: { id },
-    data: { hadMinorChangeEdit: true },
+    select: {
+      id: true,
+      status: true,
+      articleId: true,
+      createdByUserId: true,
+      article: { select: { slug: true } },
+    },
   });
 }

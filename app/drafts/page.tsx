@@ -3,13 +3,14 @@ import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth-utils';
 import { listRevisionsByUser, listPendingRevisions } from '@/db/revision-repository';
 import { StatusBadge } from '@/ui/components/status-badge';
+import { EditRevisionButton } from '@/ui/components/edit-revision-button';
 
 export default async function DraftsPage() {
   const currentUser = await getCurrentUser();
   if (!currentUser) redirect('/login?callbackUrl=/drafts');
 
   const [myRevisions, allPending] = await Promise.all([
-    listRevisionsByUser(currentUser.id, { includePending: false }),
+    listRevisionsByUser(currentUser.id, { includePending: false, includeObsolete: true }),
     listPendingRevisions(),
   ]);
 
@@ -77,12 +78,11 @@ export default async function DraftsPage() {
                     </td>
                     <td className="px-4 py-3">
                       {isOwn && (rev.status === 'Draft' || rev.status === 'Pending') && (
-                        <Link
-                          href={getEditHref(rev)}
+                        <EditRevisionButton
+                          revisionId={rev.id}
+                          editUrl={getEditHref(rev)}
                           className="text-xs text-blue-600 hover:underline"
-                        >
-                          ערוך
-                        </Link>
+                        />
                       )}
                     </td>
                   </tr>

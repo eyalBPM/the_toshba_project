@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { StarterKit } from '@tiptap/starter-kit';
@@ -15,6 +15,8 @@ import { useEditorState } from '@/ui/hooks/use-editor-state';
 import type { SnapshotTag } from '@/ui/hooks/use-editor-state';
 import { useEditorPanels } from '@/ui/hooks/use-editor-panels';
 import { useSources } from '@/ui/hooks/use-sources';
+import { useAutoSave } from '@/ui/hooks/use-auto-save';
+import { useBeforeUnload } from '@/ui/hooks/use-before-unload';
 import { EditorToolbar } from './tiptap-editor/editor-toolbar';
 import { SourceFooter } from './tiptap-editor/source-footer';
 import { SourcesPanel } from './tiptap-editor/sources-panel';
@@ -23,7 +25,11 @@ import { SagesPanel } from './tiptap-editor/sages-panel';
 import { ReferencesPanel } from './tiptap-editor/references-panel';
 import { TopicsSidebar } from './tiptap-editor/topics-sidebar';
 import { SagesSidebar } from './tiptap-editor/sages-sidebar';
-import { useState } from 'react';
+import { RevisionEditorActions } from './revision-editor-actions';
+import { McrEditorActions } from './mcr-editor-actions';
+import { ConfirmDialog } from './confirm-dialog';
+
+export type EditorMode = 'normal' | 'mcr';
 
 interface RevisionEditorProps {
   revisionId: string;
@@ -35,9 +41,12 @@ interface RevisionEditorProps {
   initialAbstractSources?: SnapshotTag[];
   status: string;
   agreementCount?: number;
-  hasApprovedMinorChange?: boolean;
-  /** Where to navigate after delete */
   deleteRedirectUrl: string;
+  editorMode?: EditorMode;
+  mcrId?: string;
+  mcrTitle?: string;
+  mcrContent?: unknown;
+  mcrSnapshotData?: unknown;
 }
 
 export function RevisionEditor({
@@ -50,19 +59,25 @@ export function RevisionEditor({
   initialAbstractSources = [],
   status,
   agreementCount = 0,
-  hasApprovedMinorChange = false,
   deleteRedirectUrl,
+  editorMode = 'normal',
+  mcrId,
+  mcrTitle,
+  mcrContent,
+  mcrSnapshotData,
 }: RevisionEditorProps) {
   const router = useRouter();
-  const [title, setTitle] = useState(initialTitle);
-  const [saving, setSaving] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [retracting, setRetracting] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState('');
-  const [saved, setSaved] = useState(false);
+  const isMcrMode = editorMode === 'mcr';
 
-  const editable = status === 'Draft' || status === 'Pending';
+  // In MCR mode, use MCR content if editing existing MCR; otherwise use revision content
+  const effectiveTitle = isMcrMode && mcrTitle ? mcrTitle : initialTitle;
+  const effectiveContent = isMcrMode && mcrContent ? mcrContent : initialContent;
+
+  const [title, setTitle] = useState(effectiveTitle);
+  const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
+  const [autoSaveError, setAutoSaveError] = useState('');
+
+  const editable = (status === 'Draft' || status === 'Pending') && viewMode === 'edit';
 
   const editor = useEditor({
     extensions: [
@@ -74,10 +89,17 @@ export function RevisionEditor({
       KeyboardTriggersExtension,
       ImageNodeExtension,
     ],
-    content: (initialContent as object) ?? {},
+    content: (effectiveContent as object) ?? {},
     editable,
     immediatelyRender: false,
   });
+
+  // Toggle editor editable state when viewMode changes
+  useEffect(() => {
+    if (editor) {
+      editor.setEditable(viewMode === 'edit');
+    }
+  }, [editor, viewMode]);
 
   const sources = useSources();
 
@@ -100,13 +122,12 @@ export function RevisionEditor({
     };
   }, [title, editor, snapshot]);
 
-  async function handleSave() {
-    if (agreementCount > 0 && !hasApprovedMinorChange) {
-      if (!confirm(`לגרסה זו יש ${agreementCount} הסכמות. עריכה תאפס את כולן. להמשיך?`)) return;
-    }
-    setError('');
-    setSaving(true);
-    try {
+  // Auto-save (disabled in MCR mode and preview mode)
+  const autoSaveEnabled = !isMcrMode && editable;
+  const { saving, lastSaved, error: saveError, triggerSave } = useAutoSave({
+    enabled: autoSaveEnabled,
+    delay: 1500,
+    onSave: async () => {
       const res = await fetch(`/api/revisions/${revisionId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -114,93 +135,77 @@ export function RevisionEditor({
       });
       if (!res.ok) {
         const json = await res.json();
-        setError(json.error?.message ?? 'שגיאה בשמירה');
-        return;
+        throw new Error(json.error?.message ?? 'שגיאה בשמירה');
       }
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-      router.refresh();
-    } finally {
-      setSaving(false);
-    }
-  }
+    },
+  });
 
-  async function handleSubmit() {
-    if (!confirm('להגיש את הגרסה לבדיקה קהילתית?')) return;
-    setError('');
-    setSubmitting(true);
-    try {
-      const saveRes = await fetch(`/api/revisions/${revisionId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildPayload()),
-      });
-      if (!saveRes.ok) {
-        const json = await saveRes.json();
-        setError(json.error?.message ?? 'שגיאה בשמירה');
-        return;
-      }
-      const submitRes = await fetch(`/api/revisions/${revisionId}/submit`, {
-        method: 'POST',
-      });
-      if (!submitRes.ok) {
-        const json = await submitRes.json();
-        setError(json.error?.message ?? 'שגיאה בהגשה');
-        return;
-      }
-      router.refresh();
-    } finally {
-      setSubmitting(false);
+  // Track content changes to trigger auto-save
+  const prevTitleRef = useRef(title);
+  useEffect(() => {
+    if (prevTitleRef.current !== title) {
+      prevTitleRef.current = title;
+      triggerSave();
     }
-  }
+  }, [title, triggerSave]);
 
-  async function handleRetract() {
-    if (!confirm('לשנות חזרה לטיוטה?')) return;
-    setError('');
-    setRetracting(true);
-    try {
-      const res = await fetch(`/api/revisions/${revisionId}/retract`, { method: 'POST' });
-      if (!res.ok) {
-        const json = await res.json();
-        setError(json.error?.message ?? 'שגיאה');
-        return;
-      }
-      router.refresh();
-    } finally {
-      setRetracting(false);
-    }
-  }
+  // Listen to editor transactions for content changes
+  useEffect(() => {
+    if (!editor || !autoSaveEnabled) return;
+    const handler = () => triggerSave();
+    editor.on('update', handler);
+    return () => { editor.off('update', handler); };
+  }, [editor, autoSaveEnabled, triggerSave]);
 
-  async function handleDelete() {
-    if (!confirm('למחוק את הטיוטה?')) return;
-    setError('');
-    setDeleting(true);
-    try {
-      const res = await fetch(`/api/revisions/${revisionId}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const json = await res.json();
-        setError(json.error?.message ?? 'שגיאה במחיקה');
-        return;
-      }
-      router.push(deleteRedirectUrl);
-    } finally {
-      setDeleting(false);
-    }
-  }
+  // Browser warning in MCR mode
+  useBeforeUnload(isMcrMode);
+
+  // Propagate save error
+  useEffect(() => {
+    if (saveError) setAutoSaveError(saveError);
+    else setAutoSaveError('');
+  }, [saveError]);
 
   return (
     <div className="space-y-4">
-      {/* Title */}
-      <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">כותרת</label>
-        <input
-          type="text"
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="כותרת הערך..."
-          disabled={!editable}
-        />
+      {/* Header: title + view mode toggle + auto-save status */}
+      <div className="flex items-start gap-4" dir="rtl">
+        <div className="flex-1">
+          <label className="mb-1 block text-sm font-medium text-gray-700">כותרת</label>
+          <input
+            type="text"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="כותרת הערך..."
+            disabled={viewMode === 'preview'}
+          />
+        </div>
+        <div className="flex items-center gap-2 pt-7">
+          {/* View mode toggle */}
+          <button
+            onClick={() => setViewMode(viewMode === 'edit' ? 'preview' : 'edit')}
+            className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+          >
+            {viewMode === 'edit' ? 'תצוגה מקדימה' : 'חזרה לעריכה'}
+          </button>
+
+          {/* Auto-save status indicator */}
+          {autoSaveEnabled && (
+            <span className="text-xs text-gray-400">
+              {saving
+                ? 'שומר...'
+                : lastSaved
+                  ? `נשמר ${lastSaved.toLocaleTimeString('he-IL')}`
+                  : ''}
+            </span>
+          )}
+          {isMcrMode && (
+            <span className="rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700">
+              מצב שינוי מינורי
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Editor + Sidebar layout */}
@@ -217,7 +222,7 @@ export function RevisionEditor({
               </div>
             )}
 
-            {/* Toolbar panel anchors (relative positioning for floating panels) */}
+            {/* Toolbar panel anchors */}
             {editable && editor && (
               <div className="relative px-2 py-1 border-b border-gray-100 bg-gray-50 flex gap-1 flex-wrap" dir="rtl">
                 {activePanel === 'sources' && (
@@ -272,49 +277,23 @@ export function RevisionEditor({
         )}
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {autoSaveError && <p className="text-sm text-red-600">{autoSaveError}</p>}
 
       {/* Action buttons */}
-      <div className="flex flex-wrap gap-3 border-t border-gray-200 pt-4">
-        {editable && (
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {saving ? 'שומר...' : saved ? '✓ נשמר' : 'שמור'}
-          </button>
-        )}
-
-        {status === 'Draft' && (
-          <>
-            <button
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
-            >
-              {submitting ? 'מגיש...' : 'הגש לבדיקה'}
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className="rounded-md bg-red-100 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-200 disabled:opacity-50"
-            >
-              {deleting ? 'מוחק...' : 'מחק טיוטה'}
-            </button>
-          </>
-        )}
-
-        {status === 'Pending' && (
-          <button
-            onClick={handleRetract}
-            disabled={retracting}
-            className="rounded-md bg-yellow-100 px-4 py-2 text-sm font-medium text-yellow-700 hover:bg-yellow-200 disabled:opacity-50"
-          >
-            {retracting ? 'מחזיר...' : 'החזר לטיוטה'}
-          </button>
-        )}
-      </div>
+      {isMcrMode ? (
+        <McrEditorActions
+          revisionId={revisionId}
+          mcrId={mcrId}
+          buildPayload={buildPayload}
+        />
+      ) : (
+        <RevisionEditorActions
+          revisionId={revisionId}
+          status={status}
+          deleteRedirectUrl={deleteRedirectUrl}
+          buildPayload={buildPayload}
+        />
+      )}
     </div>
   );
 }

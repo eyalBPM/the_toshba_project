@@ -11,7 +11,10 @@ import { createAuditLog } from '@/db/audit-log-repository';
 export interface RequestMinorChangeInput {
   user: DomainUser;
   revisionId: string;
-  message: string;
+  message?: string;
+  title?: string;
+  content?: unknown;
+  snapshotData?: unknown;
 }
 
 export async function requestMinorChange(
@@ -39,6 +42,9 @@ export async function requestMinorChange(
     revisionId: input.revisionId,
     requestingUserId: input.user.id,
     message: input.message,
+    title: input.title,
+    content: input.content,
+    snapshotData: input.snapshotData,
   });
 
   await createAuditLog({

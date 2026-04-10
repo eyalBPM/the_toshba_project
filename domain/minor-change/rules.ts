@@ -16,7 +16,6 @@ export function canRequestMinorChange(
 
 const VALID_TRANSITIONS: Record<string, MinorChangeRequestStatus[]> = {
   Pending: ['Approved', 'Rejected'],
-  Approved: ['Used'],
 };
 
 export function validateMinorChangeTransition(

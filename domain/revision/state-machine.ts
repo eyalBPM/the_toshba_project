@@ -2,13 +2,18 @@ import type { RevisionStatus, Result } from '../types';
 import { ok, fail } from '../types';
 
 const VALID_TRANSITIONS: Record<RevisionStatus, readonly RevisionStatus[]> = {
-  Draft: ['Pending'],
-  Pending: ['Draft', 'Approved', 'Rejected'],
+  Draft: ['Pending', 'Obsolete'],
+  Pending: ['Draft', 'Approved', 'Rejected', 'Obsolete'],
   Approved: [],
   Rejected: [],
+  Obsolete: [],
 };
 
-const TERMINAL_STATUSES: ReadonlySet<RevisionStatus> = new Set(['Approved', 'Rejected']);
+const TERMINAL_STATUSES: ReadonlySet<RevisionStatus> = new Set([
+  'Approved',
+  'Rejected',
+  'Obsolete',
+]);
 
 export function canTransition(from: RevisionStatus, to: RevisionStatus): boolean {
   return VALID_TRANSITIONS[from].includes(to);

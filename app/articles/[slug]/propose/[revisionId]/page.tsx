@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import { findRevisionById } from '@/db/revision-repository';
 import { findArticleBySlug } from '@/db/article-repository';
 import { getCurrentUser } from '@/lib/auth-utils';
@@ -11,6 +10,7 @@ import { MinorChangeRequestForm } from '@/ui/components/minor-change-request-for
 import { RevisionImages } from '@/ui/components/revision-images';
 import { MinorChangeStatus } from '@/ui/components/minor-change-status';
 import { MinorChangeReview } from '@/ui/components/minor-change-review';
+import { EditRevisionButton } from '@/ui/components/edit-revision-button';
 
 export default async function ProposedRevisionPage({
   params,
@@ -55,13 +55,11 @@ export default async function ProposedRevisionPage({
         </div>
         <div className="flex items-center gap-3">
           <StatusBadge type="requestStatus" value={revision.status} />
-          {isOwner && (
-            <Link
-              href={`/articles/${slug}/propose/${revisionId}/edit`}
-              className="rounded-md bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
-            >
-              ערוך
-            </Link>
+          {isOwner && (revision.status === 'Draft' || revision.status === 'Pending') && (
+            <EditRevisionButton
+              revisionId={revisionId}
+              editUrl={`/articles/${slug}/propose/${revisionId}/edit`}
+            />
           )}
         </div>
       </div>

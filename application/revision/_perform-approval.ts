@@ -5,8 +5,13 @@ import {
   updateRevisionStatus,
   linkRevisionToArticle,
   listPendingRevisionsByArticle,
+  listDraftRevisionsByArticle,
   type DbRevision,
 } from '@/db/revision-repository';
+import {
+  findPendingRequestByRevision,
+  updateMinorChangeRequestStatus,
+} from '@/db/minor-change-repository';
 import { createArticle, updateArticleCurrentRevision } from '@/db/article-repository';
 import { createAuditLog } from '@/db/audit-log-repository';
 import { createNotification } from '@/db/notification-repository';
@@ -73,6 +78,11 @@ export async function performApproval(input: PerformApprovalInput): Promise<void
       for (const comp of competing) {
         if (comp.id === revision.id) continue;
         await updateRevisionStatus(comp.id, 'Rejected');
+        // Reject any pending MCR for the competing revision
+        const compMcr = await findPendingRequestByRevision(comp.id);
+        if (compMcr) {
+          await updateMinorChangeRequestStatus(compMcr.id, 'Rejected', approvedByUserId);
+        }
         await createAuditLog({
           action: 'REVISION_AUTO_REJECTED',
           entityType: 'ArticleRevision',
@@ -86,6 +96,34 @@ export async function performApproval(input: PerformApprovalInput): Promise<void
           entityType: 'ArticleRevision',
           entityId: comp.id,
           message: 'הגרסה שלך נדחתה כיוון שגרסה מתחרה אושרה',
+        });
+      }
+    }
+
+    // 3b. Obsolete competing Draft revisions
+    if (articleId) {
+      const drafts = await listDraftRevisionsByArticle(articleId);
+      for (const draft of drafts) {
+        if (draft.id === revision.id) continue;
+        await updateRevisionStatus(draft.id, 'Obsolete');
+        // Reject any pending MCR for the draft
+        const draftMcr = await findPendingRequestByRevision(draft.id);
+        if (draftMcr) {
+          await updateMinorChangeRequestStatus(draftMcr.id, 'Rejected', approvedByUserId);
+        }
+        await createAuditLog({
+          action: 'REVISION_OBSOLETED',
+          entityType: 'ArticleRevision',
+          entityId: draft.id,
+          userId: approvedByUserId,
+          metadata: { reason: 'competing_revision_approved', approvedRevisionId: revision.id },
+        });
+        await createNotification({
+          userId: draft.createdByUserId,
+          type: 'REVISION_OBSOLETED',
+          entityType: 'ArticleRevision',
+          entityId: draft.id,
+          message: 'הטיוטה שלך הפכה למיושנת כיוון שגרסה מתחרה אושרה',
         });
       }
     }

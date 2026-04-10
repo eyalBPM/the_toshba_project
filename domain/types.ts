@@ -16,13 +16,13 @@ export type UserStatus = 'PendingVerification' | 'VerifiedUser';
 
 export type UserRole = 'User' | 'Admin' | 'Moderator' | 'Senior';
 
-export type RevisionStatus = 'Draft' | 'Pending' | 'Approved' | 'Rejected';
+export type RevisionStatus = 'Draft' | 'Pending' | 'Approved' | 'Rejected' | 'Obsolete';
 
 export type VerificationRequestStatus = 'Pending' | 'Approved' | 'Rejected';
 
 export type ImageStatus = 'PendingApproval' | 'Approved' | 'Rejected';
 
-export type MinorChangeRequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Used';
+export type MinorChangeRequestStatus = 'Pending' | 'Approved' | 'Rejected';
 
 export type ClusterVisibility = 'Private' | 'Shared' | 'Public';
 

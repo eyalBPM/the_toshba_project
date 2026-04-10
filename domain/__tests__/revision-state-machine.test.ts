@@ -28,17 +28,32 @@ describe('revision state machine', () => {
       expect(canTransition('Draft', 'Rejected')).toBe(false);
     });
 
+    it('allows Draft -> Obsolete', () => {
+      expect(canTransition('Draft', 'Obsolete')).toBe(true);
+    });
+
+    it('allows Pending -> Obsolete', () => {
+      expect(canTransition('Pending', 'Obsolete')).toBe(true);
+    });
+
     it('disallows any transition from Approved', () => {
-      const targets: RevisionStatus[] = ['Draft', 'Pending', 'Approved', 'Rejected'];
+      const targets: RevisionStatus[] = ['Draft', 'Pending', 'Approved', 'Rejected', 'Obsolete'];
       for (const to of targets) {
         expect(canTransition('Approved', to)).toBe(false);
       }
     });
 
     it('disallows any transition from Rejected', () => {
-      const targets: RevisionStatus[] = ['Draft', 'Pending', 'Approved', 'Rejected'];
+      const targets: RevisionStatus[] = ['Draft', 'Pending', 'Approved', 'Rejected', 'Obsolete'];
       for (const to of targets) {
         expect(canTransition('Rejected', to)).toBe(false);
+      }
+    });
+
+    it('disallows any transition from Obsolete', () => {
+      const targets: RevisionStatus[] = ['Draft', 'Pending', 'Approved', 'Rejected', 'Obsolete'];
+      for (const to of targets) {
+        expect(canTransition('Obsolete', to)).toBe(false);
       }
     });
 
@@ -78,6 +93,10 @@ describe('revision state machine', () => {
 
     it('returns false for Pending', () => {
       expect(isTerminalStatus('Pending')).toBe(false);
+    });
+
+    it('returns true for Obsolete', () => {
+      expect(isTerminalStatus('Obsolete')).toBe(true);
     });
   });
 });

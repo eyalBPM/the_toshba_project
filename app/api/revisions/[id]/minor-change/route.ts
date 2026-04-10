@@ -6,7 +6,10 @@ import { requestMinorChange } from '@/application/minor-change/request-minor-cha
 import { listMinorChangeRequestsByRevision } from '@/db/minor-change-repository';
 
 const createSchema = z.object({
-  message: z.string().min(5, 'Message must be at least 5 characters'),
+  message: z.string().min(5, 'Message must be at least 5 characters').optional(),
+  title: z.string().optional(),
+  content: z.unknown().optional(),
+  snapshotData: z.unknown().optional(),
 });
 
 export async function GET(
@@ -52,6 +55,9 @@ export async function POST(
       user: { id: user.id, status: user.status, role: user.role },
       revisionId,
       message: parsed.data.message,
+      title: parsed.data.title,
+      content: parsed.data.content,
+      snapshotData: parsed.data.snapshotData,
     });
 
     return apiSuccess({ id: result.id }, 201);

@@ -1,11 +1,7 @@
 import type { DomainUser, RevisionStatus } from '@/domain/types';
 import { canEditRevision, getEditPolicy, type EditPolicy } from '@/domain/revision/editing';
-import { findRevisionById, updateRevisionContent, markRevisionMinorChangeEdit, type SnapshotInput } from '@/db/revision-repository';
+import { findRevisionById, updateRevisionContent, type SnapshotInput } from '@/db/revision-repository';
 import { countAgreementsByRevision, deleteAgreementsByRevision } from '@/db/agreement-repository';
-import {
-  findApprovedRequestByRevision,
-  updateMinorChangeRequestStatus,
-} from '@/db/minor-change-repository';
 import { createAuditLog } from '@/db/audit-log-repository';
 
 export interface UpdateRevisionInput {
@@ -38,11 +34,8 @@ export async function updateRevision(input: UpdateRevisionInput): Promise<Update
     throw new Error(editGuard.error);
   }
 
-  const approvedRequest = await findApprovedRequestByRevision(input.revisionId);
-  const isMinorChangeApproved = !!approvedRequest;
-
   const agreementCount = await countAgreementsByRevision(input.revisionId);
-  const editPolicy = getEditPolicy(agreementCount, isMinorChangeApproved);
+  const editPolicy = getEditPolicy(agreementCount);
 
   await updateRevisionContent(input.revisionId, {
     title: input.title,
@@ -54,17 +47,12 @@ export async function updateRevision(input: UpdateRevisionInput): Promise<Update
     await deleteAgreementsByRevision(input.revisionId);
   }
 
-  if (isMinorChangeApproved && approvedRequest) {
-    await updateMinorChangeRequestStatus(approvedRequest.id, 'Used');
-    await markRevisionMinorChangeEdit(input.revisionId);
-  }
-
   await createAuditLog({
     action: 'REVISION_EDITED',
     entityType: 'ArticleRevision',
     entityId: input.revisionId,
     userId: input.user.id,
-    metadata: { willResetAgreements: editPolicy.willResetAgreements, isMinorChangeApproved },
+    metadata: { willResetAgreements: editPolicy.willResetAgreements },
   });
 
   return { editPolicy };

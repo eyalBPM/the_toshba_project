@@ -26,6 +26,7 @@ enum RevisionStatus {
   Pending
   Approved
   Rejected
+  Obsolete
 }
 
 enum ImageStatus {
@@ -50,7 +51,6 @@ enum MinorChangeRequestStatus {
   Pending
   Approved
   Rejected
-  Used
 }
 
 // ─── User ────────────────────────────────────────────────
@@ -125,16 +125,15 @@ model Article {
 // ─── ArticleRevision ─────────────────────────────────────
 
 model ArticleRevision {
-  id                 String         @id @default(cuid())
-  articleId          String?
-  title              String
-  content            Json           @default("{}")
-  status             RevisionStatus @default(Draft)
-  createdByUserId    String
-  snapshotId         String         @unique
-  hadMinorChangeEdit Boolean        @default(false)
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  id              String         @id @default(cuid())
+  articleId       String?
+  title           String
+  content         Json           @default("{}")
+  status          RevisionStatus @default(Draft)
+  createdByUserId String
+  snapshotId      String         @unique
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   article              Article?              @relation("ArticleRevisions", fields: [articleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   currentOfArticle     Article?              @relation("CurrentRevision")
@@ -333,7 +332,10 @@ model MinorChangeRequest {
   id               String                   @id @default(cuid())
   revisionId       String
   requestingUserId String
-  message          String                   @db.Text
+  message          String?                  @db.Text
+  title            String?
+  content          Json?
+  snapshotData     Json?
   status           MinorChangeRequestStatus @default(Pending)
   reviewedByUserId String?
   reviewNote       String?                  @db.Text

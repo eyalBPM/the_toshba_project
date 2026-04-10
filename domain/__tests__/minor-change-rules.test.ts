@@ -67,27 +67,18 @@ describe('minor change rules', () => {
       expect(validateMinorChangeTransition('Pending', 'Rejected')).toEqual({ success: true });
     });
 
-    it('allows Approved -> Used', () => {
-      expect(validateMinorChangeTransition('Approved', 'Used')).toEqual({ success: true });
-    });
-
-    it('rejects Pending -> Used', () => {
-      const result = validateMinorChangeTransition('Pending', 'Used');
-      expect(result.success).toBe(false);
-    });
-
     it('rejects Rejected -> Approved', () => {
       const result = validateMinorChangeTransition('Rejected', 'Approved');
       expect(result.success).toBe(false);
     });
 
-    it('rejects Used -> Pending', () => {
-      const result = validateMinorChangeTransition('Used', 'Pending');
+    it('rejects Approved -> Rejected', () => {
+      const result = validateMinorChangeTransition('Approved', 'Rejected');
       expect(result.success).toBe(false);
     });
 
-    it('rejects Approved -> Rejected', () => {
-      const result = validateMinorChangeTransition('Approved', 'Rejected');
+    it('rejects Approved -> Pending', () => {
+      const result = validateMinorChangeTransition('Approved', 'Pending');
       expect(result.success).toBe(false);
     });
   });
