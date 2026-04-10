@@ -66,23 +66,23 @@ model User {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
-  createdArticles          Article[]
-  createdRevisions         ArticleRevision[]
-  agreements               Agreement[]
-  uploadedImages           Image[]
-  ownedClusters            OpinionCluster[]       @relation("ClusterOwner")
-  clusterAccess            OpinionClusterAccess[]
-  opinionResponses         OpinionResponse[]
-  printLists               PrintList[]
-  sentVerificationRequests VerificationRequest[]  @relation("VerificationRequester")
-  receivedVerificationReqs VerificationRequest[]  @relation("VerificationVerifier")
-  verificationsReceived    UserVerification[]     @relation("VerifiedUser")
-  verificationsGiven       UserVerification[]     @relation("VerifiedByUser")
-  auditLogs                AuditLog[]
-  notifications            Notification[]
-  missingSources           MissingSources[]
-  minorChangeRequestsMade     MinorChangeRequest[] @relation("MinorChangeRequester")
-  minorChangeRequestsReviewed MinorChangeRequest[] @relation("MinorChangeReviewer")
+  createdArticles             Article[]
+  createdRevisions            ArticleRevision[]
+  agreements                  Agreement[]
+  uploadedImages              Image[]
+  ownedClusters               OpinionCluster[]       @relation("ClusterOwner")
+  clusterAccess               OpinionClusterAccess[]
+  opinionResponses            OpinionResponse[]
+  printLists                  PrintList[]
+  sentVerificationRequests    VerificationRequest[]  @relation("VerificationRequester")
+  receivedVerificationReqs    VerificationRequest[]  @relation("VerificationVerifier")
+  verificationsReceived       UserVerification[]     @relation("VerifiedUser")
+  verificationsGiven          UserVerification[]     @relation("VerifiedByUser")
+  auditLogs                   AuditLog[]
+  notifications               Notification[]
+  missingSources              MissingSources[]
+  minorChangeRequestsMade     MinorChangeRequest[]   @relation("MinorChangeRequester")
+  minorChangeRequestsReviewed MinorChangeRequest[]   @relation("MinorChangeReviewer")
 
   @@index([status])
   @@index([role])
@@ -113,9 +113,9 @@ model Article {
   createdByUserId   String
   createdAt         DateTime @default(now())
 
-  currentRevision ArticleRevision? @relation("CurrentRevision", fields: [currentRevisionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  snapshot        ArticleSnapshot? @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
-  createdBy       User             @relation(fields: [createdByUserId], references: [id])
+  currentRevision ArticleRevision?  @relation("CurrentRevision", fields: [currentRevisionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  snapshot        ArticleSnapshot?  @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+  createdBy       User              @relation(fields: [createdByUserId], references: [id])
   revisions       ArticleRevision[] @relation("ArticleRevisions")
 
   @@index([createdByUserId])
@@ -135,15 +135,15 @@ model ArticleRevision {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
-  article              Article?              @relation("ArticleRevisions", fields: [articleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  currentOfArticle     Article?              @relation("CurrentRevision")
-  snapshot             ArticleSnapshot       @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
-  createdBy            User                  @relation(fields: [createdByUserId], references: [id])
-  agreements           Agreement[]
-  images               Image[]
-  missingSources       MissingSources[]
-  opinionResponses     OpinionResponse[]
-  minorChangeRequests  MinorChangeRequest[]
+  article             Article?             @relation("ArticleRevisions", fields: [articleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  currentOfArticle    Article?             @relation("CurrentRevision")
+  snapshot            ArticleSnapshot      @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  createdBy           User                 @relation(fields: [createdByUserId], references: [id])
+  agreements          Agreement[]
+  images              Image[]
+  missingSources      MissingSources[]
+  opinionResponses    OpinionResponse[]
+  minorChangeRequests MinorChangeRequest[]
 
   @@index([articleId])
   @@index([status])

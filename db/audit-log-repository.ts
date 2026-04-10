@@ -13,7 +13,7 @@ export async function createAuditLog(data: {
       entityType: data.entityType,
       entityId: data.entityId,
       userId: data.userId,
-      metadata: data.metadata ?? {},
+      metadata: (data.metadata ?? {}) as object,
     },
   });
 }

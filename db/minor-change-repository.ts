@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import type { MinorChangeRequestStatus } from '@/db/generated/prisma/enums';
 
 export interface DbMinorChangeRequest {
   id: string;
@@ -8,7 +9,7 @@ export interface DbMinorChangeRequest {
   title: string | null;
   content: unknown;
   snapshotData: unknown;
-  status: string;
+  status: MinorChangeRequestStatus;
   reviewedByUserId: string | null;
   reviewNote: string | null;
   createdAt: Date;
@@ -102,7 +103,7 @@ export async function listMinorChangeRequestsByRevision(
 
 export async function updateMinorChangeRequestStatus(
   id: string,
-  status: string,
+  status: MinorChangeRequestStatus,
   reviewedByUserId?: string,
   reviewNote?: string,
 ): Promise<DbMinorChangeRequest> {

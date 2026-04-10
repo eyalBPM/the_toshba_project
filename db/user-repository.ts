@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import type { UserStatus, UserRole } from '@/db/generated/prisma/enums';
 
 export interface DbUser {
   id: string;
@@ -6,8 +7,8 @@ export interface DbUser {
   password: string | null;
   name: string;
   googleId: string | null;
-  status: string;
-  role: string;
+  status: UserStatus;
+  role: UserRole;
 }
 
 const SELECT_FIELDS = {
@@ -59,7 +60,7 @@ export async function updateUserGoogleId(userId: string, googleId: string): Prom
 
 export async function updateUserStatus(
   userId: string,
-  status: string,
+  status: UserStatus,
 ): Promise<DbUser> {
   return prisma.user.update({
     where: { id: userId },
@@ -70,7 +71,7 @@ export async function updateUserStatus(
 
 export async function updateUserRole(
   userId: string,
-  role: string,
+  role: UserRole,
 ): Promise<DbUser> {
   return prisma.user.update({
     where: { id: userId },
@@ -81,8 +82,8 @@ export async function updateUserRole(
 
 export async function listUsers(opts: {
   search?: string;
-  status?: string;
-  role?: string;
+  status?: UserStatus;
+  role?: UserRole;
   cursor?: string;
   limit?: number;
 }): Promise<DbUser[]> {

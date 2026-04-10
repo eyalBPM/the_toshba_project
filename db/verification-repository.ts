@@ -1,11 +1,12 @@
 import { prisma } from './prisma';
+import type { VerificationRequestStatus } from '@/db/generated/prisma/enums';
 
 export interface DbVerificationRequest {
   id: string;
   requestingUserId: string;
   requestedVerifierId: string;
   message: string;
-  status: string;
+  status: VerificationRequestStatus;
   createdAt: Date;
   requester: { id: string; name: string; email: string };
   verifier: { id: string; name: string };
@@ -90,7 +91,7 @@ export async function findPendingRequestBetween(
 
 export async function updateVerificationRequestStatus(
   id: string,
-  status: string,
+  status: VerificationRequestStatus,
 ): Promise<DbVerificationRequest> {
   return prisma.verificationRequest.update({
     where: { id },

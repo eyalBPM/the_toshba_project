@@ -3,6 +3,7 @@ import { requireRole } from '@/lib/auth-utils';
 import { apiSuccess, ApiErrors } from '@/lib/api-error';
 import { listUsers } from '@/db/user-repository';
 import { parsePaginationParams, toPaginated } from '@/lib/pagination';
+import type { UserStatus, UserRole } from '@/db/generated/prisma/enums';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,8 +11,8 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const { cursor, limit } = parsePaginationParams(url);
     const search = url.searchParams.get('search') ?? undefined;
-    const status = url.searchParams.get('status') ?? undefined;
-    const role = url.searchParams.get('role') ?? undefined;
+    const status = (url.searchParams.get('status') ?? undefined) as UserStatus | undefined;
+    const role = (url.searchParams.get('role') ?? undefined) as UserRole | undefined;
 
     const users = await listUsers({ search, status, role, cursor, limit });
     return apiSuccess(toPaginated(users, limit));

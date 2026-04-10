@@ -73,10 +73,11 @@ export function OpinionList({
   );
 
   // Filter by search
-  const filteredGroups = search.trim()
+  type GroupedCluster = { title: string; items: OpinionResponseItem[] };
+  const filteredGroups: Record<string, GroupedCluster> = search.trim()
     ? Object.fromEntries(
         Object.entries(grouped)
-          .map(([id, group]) => [
+          .map(([id, group]): [string, GroupedCluster] => [
             id,
             {
               ...group,
@@ -87,7 +88,7 @@ export function OpinionList({
               ),
             },
           ])
-          .filter(([, group]) => group.items.length > 0),
+          .filter(([, group]) => (group as GroupedCluster).items.length > 0),
       )
     : grouped;
 
@@ -138,7 +139,7 @@ export function OpinionList({
               <p className="text-xs text-gray-400">אין חוות דעת עדיין</p>
             )}
 
-            {Object.entries(filteredGroups).map(([clusterId, group]) => (
+            {Object.entries(filteredGroups).map(([clusterId, group]: [string, GroupedCluster]) => (
               <div key={clusterId} className="space-y-1">
                 <p className="text-xs font-medium text-gray-500">{group.title}</p>
                 {group.items.map((resp) => (

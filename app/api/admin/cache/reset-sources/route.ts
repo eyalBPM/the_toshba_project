@@ -5,7 +5,7 @@ import { apiSuccess, ApiErrors } from '@/lib/api-error';
 export async function POST() {
   try {
     await requireRole('Admin');
-    revalidateTag('sources');
+    revalidateTag('sources', 'max');
     return apiSuccess({ reset: true });
   } catch (err) {
     const msg = err instanceof Error ? err.message : '';

@@ -1,12 +1,13 @@
 import { prisma } from './prisma';
 import type { DbArticleSnapshot } from './article-repository';
+import type { RevisionStatus } from '@/db/generated/prisma/enums';
 
 export interface DbRevision {
   id: string;
   articleId: string | null;
   title: string;
   content: unknown;
-  status: string;
+  status: RevisionStatus;
   createdByUserId: string;
   snapshotId: string;
   createdAt: Date;
@@ -94,7 +95,7 @@ export async function listRevisionsByUser(
   userId: string,
   opts: { includePending?: boolean; includeObsolete?: boolean } = {},
 ): Promise<DbRevision[]> {
-  const statuses: string[] = ['Draft'];
+  const statuses: RevisionStatus[] = ['Draft'];
   if (opts.includePending) statuses.push('Pending');
   if (opts.includeObsolete) statuses.push('Obsolete');
 
@@ -170,7 +171,7 @@ export async function updateRevisionContent(
   });
 }
 
-export async function updateRevisionStatus(id: string, status: string): Promise<DbRevision> {
+export async function updateRevisionStatus(id: string, status: RevisionStatus): Promise<DbRevision> {
   return prisma.articleRevision.update({
     where: { id },
     data: { status },

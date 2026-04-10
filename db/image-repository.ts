@@ -1,11 +1,12 @@
 import { prisma } from './prisma';
+import type { ImageStatus } from '@/db/generated/prisma/enums';
 
 export interface DbImage {
   id: string;
   revisionId: string;
   url: string;
   uploadedByUserId: string;
-  status: string;
+  status: ImageStatus;
   createdAt: Date;
   uploadedBy: { id: string; name: string };
   revision: { id: string; title: string };
@@ -34,7 +35,7 @@ export async function listPendingImages(): Promise<DbImage[]> {
   });
 }
 
-export async function listImages(opts: { status?: string } = {}): Promise<DbImage[]> {
+export async function listImages(opts: { status?: ImageStatus } = {}): Promise<DbImage[]> {
   return prisma.image.findMany({
     where: opts.status ? { status: opts.status } : {},
     select: IMAGE_SELECT,
@@ -44,7 +45,7 @@ export async function listImages(opts: { status?: string } = {}): Promise<DbImag
 
 export async function updateImageStatus(
   id: string,
-  status: string,
+  status: ImageStatus,
 ): Promise<DbImage> {
   return prisma.image.update({
     where: { id },

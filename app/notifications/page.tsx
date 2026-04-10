@@ -12,7 +12,7 @@ export default async function NotificationsPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
       <h1 className="mb-6 text-2xl font-bold">התראות</h1>
-      <NotificationInbox initialNotifications={notifications} />
+      <NotificationInbox initialNotifications={notifications.map((n) => ({ ...n, createdAt: n.createdAt.toISOString() }))} />
     </main>
   );
 }
