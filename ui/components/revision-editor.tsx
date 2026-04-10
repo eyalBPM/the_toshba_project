@@ -290,6 +290,7 @@ export function RevisionEditor({
           mcrId={mcrId}
           initialMessage={mcrMessage}
           buildPayload={buildPayload}
+          viewUrl={viewUrl}
         />
       ) : (
         <RevisionEditorActions

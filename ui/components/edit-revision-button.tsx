@@ -95,20 +95,6 @@ export function EditRevisionButton({
     router.push(`${editUrl}${separator}mode=mcr&mcrId=${checkResult?.pendingMcrId}`);
   }
 
-  async function handleDeleteMcr() {
-    if (!checkResult?.pendingMcrId) return;
-    setActionLoading(true);
-    try {
-      await fetch(
-        `/api/revisions/${revisionId}/minor-change/${checkResult.pendingMcrId}`,
-        { method: 'DELETE' },
-      );
-      setShowMcrDialog(false);
-    } finally {
-      setActionLoading(false);
-    }
-  }
-
   const staleMessage = checkResult?.reason === 'approved'
     ? 'הגרסה אושרה והפכה למאמר.'
     : checkResult?.reason === 'rejected'
@@ -200,12 +186,6 @@ export function EditRevisionButton({
             label: 'ערוך בקשה לשינוי מינורי',
             onClick: handleEditExistingMcr,
             variant: 'primary',
-          },
-          {
-            label: 'מחק בקשה לשינוי מינורי, והשאר את המאמר כמו שהוא',
-            onClick: handleDeleteMcr,
-            variant: 'warning',
-            disabled: actionLoading,
           },
           {
             label: 'לא, השאר את המצב כמו שהוא',

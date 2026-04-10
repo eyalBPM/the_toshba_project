@@ -9,15 +9,37 @@ interface McrEditorActionsProps {
   mcrId?: string;
   initialMessage?: string;
   buildPayload: () => { title: string; content: object; snapshot: unknown };
+  viewUrl: string;
 }
 
-export function McrEditorActions({ revisionId, mcrId, initialMessage, buildPayload }: McrEditorActionsProps) {
+export function McrEditorActions({ revisionId, mcrId, initialMessage, buildPayload, viewUrl }: McrEditorActionsProps) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState(initialMessage ?? '');
   const [showRaceDialog, setShowRaceDialog] = useState(false);
   const [racePayload, setRacePayload] = useState<object | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDeleteMcr() {
+    if (!mcrId) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(
+        `/api/revisions/${revisionId}/minor-change/${mcrId}`,
+        { method: 'DELETE' },
+      );
+      if (!res.ok) {
+        const json = await res.json();
+        setError(json.error?.message ?? 'שגיאה במחיקת הבקשה');
+        return;
+      }
+      router.push(viewUrl);
+      router.refresh();
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   async function handleSubmitMcr() {
     setError('');
@@ -129,6 +151,15 @@ export function McrEditorActions({ revisionId, mcrId, initialMessage, buildPaylo
         >
           ביטול
         </button>
+        {mcrId && (
+          <button
+            onClick={handleDeleteMcr}
+            disabled={deleting}
+            className="rounded-md bg-red-100 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-200 disabled:opacity-50 mr-auto"
+          >
+            {deleting ? 'מוחק...' : 'מחק בקשה לשינוי מינורי'}
+          </button>
+        )}
       </div>
 
       {/* Race condition dialog */}
