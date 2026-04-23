@@ -259,7 +259,7 @@ Behavior:
 - **Sidebar panel:** always visible next to editor, shows all current topics with delete option. Deleting non-abstract topic also removes it from body
 
 Management:
-- Admin interface for **merging** topics: deleted entry removed from table, all snapshots referencing its ID updated to surviving ID
+- Moderation interface for **merging** topics (available to Admin, Senior, Moderator): deleted entry removed from table, all snapshots referencing its ID updated to surviving ID
 
 Rules:
 - text must be unique
@@ -323,7 +323,7 @@ Behavior:
 - **Sidebar panel:** same as Topics
 
 Management:
-- Admin interface for **merging** sages (same as Topics)
+- Moderation interface for **merging** sages (same roles as Topics: Admin, Senior, Moderator)
 
 Rules:
 - text must be unique
@@ -392,11 +392,11 @@ Policy:
 A revision is approved when:
 
 1. It reaches 35 agreements OR
-2. Approved by Admin (system override)
+2. Approved manually by Admin or Senior (system override)
 
 Additionally:
 
-- Senior users CAN reject pending revisions
+- Admin and Senior CAN reject pending revisions; a rejection is final. A Senior rejection must include a note/message.
 
 When approved:
 
@@ -428,14 +428,20 @@ Allows editing WITHOUT losing agreements.
 
 Flow:
 
-1. user requests minor change
-2. Admin reviews and decides whether the change is minor
-3. if approved → agreements preserved
+1. User requests a minor change.
+   - The revision creator can always request a minor change on their own revision.
+   - Admin and Senior can also create a minor change request on any revision (even one they do not own).
+2. Admin, Senior, or Moderator reviews and decides whether the change is minor.
+3. If approved → agreements preserved.
 
 Rules:
 
 - there is no strict automatic definition of minor change
 - only system-approved minor changes preserve agreements
+- only one Pending minor change request per revision at a time
+- minor change requests can only be created for revisions in `Pending` status
+- Admin and Senior may also edit or delete a minor change request on any revision
+- on the revision's own MCRs, the revision creator retains full edit/delete rights regardless of who created the request
 
 ---
 
@@ -505,15 +511,17 @@ States:
 - PendingVerification
 - VerifiedUser
 
-Roles:
+Roles (hierarchical — each higher role inherits all permissions of the roles below it):
 
-- Admin
+- Admin (highest)
+- Senior
 - Moderator
-- Senior (NEW)
+- User (default)
 
-### Senior Role Assignment:
-- First Senior user is manually assigned via direct DB update
-- After that, Senior users can grant the Senior role to other users
+### Role Assignment:
+- First Admin is manually assigned via direct DB update
+- Only Admin can assign or change user roles (grant, promote, or demote any role — including other Admins)
+- No other role has role-management capability
 
 ---
 
@@ -547,6 +555,8 @@ Rules:
 
 # 🔒 Permissions
 
+## Status-based
+
 Only verified users may:
 
 - create revisions
@@ -558,18 +568,28 @@ Pending users:
 - read-only
 - request verification
 
-Admins:
+## Role-based (hierarchical: Admin > Senior > Moderator > User)
 
-- approve revisions
-- approve images
-- approve minor changes
+Each higher role inherits all permissions of the roles below it.
 
-Senior users:
+### User (default)
+- no elevated permissions
 
+### Moderator
+- approve / reject images
+- approve / reject minor change requests
+- merge Topics and Sages
+
+### Senior (inherits Moderator)
+- approve pending revisions (system override)
 - reject pending revisions
-- a single Senior rejection is final
-- rejection must include a note/message
-- revision author must be notified
+  - a rejection by a Senior is final
+  - rejection must include a note/message
+  - revision author must be notified
+- create / edit / delete minor change requests on any revision
+
+### Admin (inherits Senior)
+- manage user roles (grant, change, demote — including assigning other Admins)
 
 ---
 
@@ -645,7 +665,7 @@ Notifications are created for:
 - revision rejection (including Senior rejection with note)
 - new agreements on user's revision
 - verification request status changes
-- role changes (e.g., granted Senior)
+- role changes (any promotion or demotion)
 - any other relevant user-impacting event
 
 ---

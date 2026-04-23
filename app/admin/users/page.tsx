@@ -1,7 +1,8 @@
 import { getCurrentUser } from '@/lib/auth-utils';
 import { listUsers } from '@/db/user-repository';
+import type { UserRole } from '@/domain/types';
 import { StatusBadge } from '@/ui/components/status-badge';
-import { GrantSeniorButton } from '@/ui/components/admin/grant-senior-button';
+import { ChangeRoleButton } from '@/ui/components/admin/change-role-button';
 import { ResetCacheButton } from '@/ui/components/admin/reset-cache-button';
 
 export default async function AdminUsersPage() {
@@ -10,7 +11,6 @@ export default async function AdminUsersPage() {
     listUsers({}),
   ]);
 
-  const isSenior = currentUser?.role === 'Senior';
   const isAdmin = currentUser?.role === 'Admin';
 
   return (
@@ -33,11 +33,7 @@ export default async function AdminUsersPage() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {users.map((user) => {
-              const canGrant =
-                (isSenior || isAdmin) &&
-                user.status === 'VerifiedUser' &&
-                user.role === 'User' &&
-                user.id !== currentUser?.id;
+              const canChangeRole = isAdmin && user.id !== currentUser?.id;
 
               return (
                 <tr key={user.id} className="hover:bg-gray-50">
@@ -50,8 +46,12 @@ export default async function AdminUsersPage() {
                     <StatusBadge type="userRole" value={user.role} />
                   </td>
                   <td className="px-4 py-3">
-                    {canGrant && (
-                      <GrantSeniorButton userId={user.id} userName={user.name} />
+                    {canChangeRole && (
+                      <ChangeRoleButton
+                        userId={user.id}
+                        userName={user.name}
+                        currentRole={user.role as UserRole}
+                      />
                     )}
                   </td>
                 </tr>

@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { requireAuth } from '@/lib/auth-utils';
 import { apiSuccess, ApiErrors } from '@/lib/api-error';
+import { canApproveMinorChange } from '@/domain/permissions/rules';
 import { requestMinorChange } from '@/application/minor-change/request-minor-change';
 import { listMinorChangeRequestsByRevision } from '@/db/minor-change-repository';
 
@@ -22,8 +23,8 @@ export async function GET(
 
     const requests = await listMinorChangeRequestsByRevision(revisionId);
 
-    // Non-admins can only see their own requests
-    const filtered = user.role === 'Admin'
+    // Users who can approve minor changes see all requests; others see only their own.
+    const filtered = canApproveMinorChange(user.role)
       ? requests
       : requests.filter((r) => r.requestingUserId === user.id);
 

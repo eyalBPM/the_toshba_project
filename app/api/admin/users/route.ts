@@ -7,7 +7,7 @@ import type { UserStatus, UserRole } from '@/db/generated/prisma/enums';
 
 export async function GET(request: NextRequest) {
   try {
-    await requireRole('Admin', 'Senior');
+    await requireRole('Admin');
     const url = new URL(request.url);
     const { cursor, limit } = parsePaginationParams(url);
     const search = url.searchParams.get('search') ?? undefined;

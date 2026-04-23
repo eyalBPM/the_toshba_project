@@ -7,7 +7,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string; requestId: string }> },
 ) {
   try {
-    const user = await requireRole('Admin');
+    const user = await requireRole('Admin', 'Senior', 'Moderator');
     const { requestId } = await params;
 
     await approveMinorChange({

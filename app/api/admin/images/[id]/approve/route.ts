@@ -7,7 +7,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireRole('Admin');
+    const user = await requireRole('Admin', 'Senior', 'Moderator');
     const { id } = await params;
 
     await approveImage({

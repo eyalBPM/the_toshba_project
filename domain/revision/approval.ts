@@ -6,8 +6,8 @@ export function canApproveRevision(user: DomainUser, revision: DomainRevision): 
   if (revision.status !== 'Pending') {
     return fail('Only pending revisions can be approved');
   }
-  if (user.role !== 'Admin') {
-    return fail('Only admins can manually approve revisions');
+  if (user.role !== 'Admin' && user.role !== 'Senior') {
+    return fail('Only admins and senior users can manually approve revisions');
   }
   return ok();
 }

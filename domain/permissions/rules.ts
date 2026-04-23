@@ -14,10 +14,12 @@ export function canWriteResponse(status: UserStatus): boolean {
   return status === 'VerifiedUser';
 }
 
-// ─── Role-based permissions ─────────────────────────────
+// ─── Role-based permissions (hierarchical) ──────────────
+// Hierarchy: Admin > Senior > Moderator > User.
+// Each role inherits the permissions of the roles below it.
 
 export function canApproveRevision(role: UserRole): boolean {
-  return role === 'Admin';
+  return role === 'Admin' || role === 'Senior';
 }
 
 export function canRejectRevision(role: UserRole): boolean {
@@ -25,13 +27,17 @@ export function canRejectRevision(role: UserRole): boolean {
 }
 
 export function canApproveImage(role: UserRole): boolean {
-  return role === 'Admin';
+  return role === 'Admin' || role === 'Senior' || role === 'Moderator';
 }
 
 export function canApproveMinorChange(role: UserRole): boolean {
-  return role === 'Admin';
+  return role === 'Admin' || role === 'Senior' || role === 'Moderator';
 }
 
-export function canGrantSeniorRole(role: UserRole): boolean {
-  return role === 'Senior';
+export function canMergeTopicsAndSages(role: UserRole): boolean {
+  return role === 'Admin' || role === 'Senior' || role === 'Moderator';
+}
+
+export function canManageRoles(role: UserRole): boolean {
+  return role === 'Admin';
 }

@@ -4,7 +4,7 @@ import { listPendingMinorChangeRequests } from '@/db/minor-change-repository';
 
 export async function GET() {
   try {
-    await requireRole('Admin');
+    await requireRole('Admin', 'Senior', 'Moderator');
     const requests = await listPendingMinorChangeRequests();
     return apiSuccess(requests);
   } catch (err) {

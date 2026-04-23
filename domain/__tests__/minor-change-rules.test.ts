@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  canManageMinorChangeRequest,
   canRequestMinorChange,
   validateMinorChangeTransition,
 } from '../minor-change/rules';
@@ -20,12 +21,80 @@ function makeRevision(overrides: Partial<DomainRevision> = {}): DomainRevision {
 }
 
 describe('minor change rules', () => {
+  describe('canManageMinorChangeRequest', () => {
+    it('allows revision creator', () => {
+      expect(canManageMinorChangeRequest(makeUser(), makeRevision())).toBe(true);
+    });
+
+    it('allows Admin on any revision', () => {
+      expect(
+        canManageMinorChangeRequest(
+          makeUser({ id: 'admin-1', role: 'Admin' }),
+          makeRevision(),
+        ),
+      ).toBe(true);
+    });
+
+    it('allows Senior on any revision', () => {
+      expect(
+        canManageMinorChangeRequest(
+          makeUser({ id: 'senior-1', role: 'Senior' }),
+          makeRevision(),
+        ),
+      ).toBe(true);
+    });
+
+    it('rejects Moderator who is not the creator', () => {
+      expect(
+        canManageMinorChangeRequest(
+          makeUser({ id: 'mod-1', role: 'Moderator' }),
+          makeRevision(),
+        ),
+      ).toBe(false);
+    });
+
+    it('rejects regular user who is not the creator', () => {
+      expect(
+        canManageMinorChangeRequest(
+          makeUser({ id: 'other-user' }),
+          makeRevision(),
+        ),
+      ).toBe(false);
+    });
+  });
+
   describe('canRequestMinorChange', () => {
     it('allows owner of Pending revision', () => {
       expect(canRequestMinorChange(makeUser(), makeRevision())).toEqual({ success: true });
     });
 
-    it('rejects non-owner', () => {
+    it('allows Admin on any Pending revision', () => {
+      expect(
+        canRequestMinorChange(
+          makeUser({ id: 'admin-1', role: 'Admin' }),
+          makeRevision(),
+        ),
+      ).toEqual({ success: true });
+    });
+
+    it('allows Senior on any Pending revision', () => {
+      expect(
+        canRequestMinorChange(
+          makeUser({ id: 'senior-1', role: 'Senior' }),
+          makeRevision(),
+        ),
+      ).toEqual({ success: true });
+    });
+
+    it('rejects Moderator who is not the creator', () => {
+      const result = canRequestMinorChange(
+        makeUser({ id: 'mod-1', role: 'Moderator' }),
+        makeRevision(),
+      );
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects regular non-owner', () => {
       const result = canRequestMinorChange(
         makeUser({ id: 'other-user' }),
         makeRevision(),
@@ -33,9 +102,9 @@ describe('minor change rules', () => {
       expect(result.success).toBe(false);
     });
 
-    it('rejects Draft revision', () => {
+    it('rejects Draft revision even for Admin', () => {
       const result = canRequestMinorChange(
-        makeUser(),
+        makeUser({ role: 'Admin' }),
         makeRevision({ status: 'Draft' }),
       );
       expect(result.success).toBe(false);

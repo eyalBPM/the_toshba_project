@@ -6,7 +6,7 @@ import { parsePaginationParams, toPaginated } from '@/lib/pagination';
 
 export async function GET(request: NextRequest) {
   try {
-    await requireRole('Admin');
+    await requireRole('Admin', 'Senior');
     const { cursor, limit } = parsePaginationParams(new URL(request.url));
     const revisions = await listPendingRevisions({ cursor, limit });
     return apiSuccess(toPaginated(revisions, limit));

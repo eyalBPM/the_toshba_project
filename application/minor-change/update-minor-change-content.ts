@@ -1,4 +1,5 @@
-import type { DomainUser } from '@/domain/types';
+import type { DomainUser, RevisionStatus } from '@/domain/types';
+import { canManageMinorChangeRequest } from '@/domain/minor-change/rules';
 import { findRevisionById } from '@/db/revision-repository';
 import {
   findMinorChangeRequestById,
@@ -29,8 +30,17 @@ export async function updateMinorChangeContent(
   const revision = await findRevisionById(request.revisionId);
   if (!revision) throw new Error('Revision not found');
 
-  if (revision.createdByUserId !== input.user.id) {
-    throw new Error('Only the revision creator can update a minor change request');
+  const domainRevision = {
+    id: revision.id,
+    articleId: revision.articleId,
+    status: revision.status as RevisionStatus,
+    createdByUserId: revision.createdByUserId,
+  };
+
+  if (!canManageMinorChangeRequest(input.user, domainRevision)) {
+    throw new Error(
+      'Only the revision creator, admins or senior users can update a minor change request',
+    );
   }
 
   const updated = await updateMinorChangeRequestContent(input.requestId, {

@@ -27,7 +27,18 @@ describe('revision approval', () => {
       expect(canApproveRevision(makeUser(), makeRevision())).toEqual({ success: true });
     });
 
-    it('rejects non-admin approval', () => {
+    it('allows senior to approve pending revision', () => {
+      expect(
+        canApproveRevision(makeUser({ role: 'Senior' }), makeRevision()),
+      ).toEqual({ success: true });
+    });
+
+    it('rejects moderator approval', () => {
+      const result = canApproveRevision(makeUser({ role: 'Moderator' }), makeRevision());
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects regular user approval', () => {
       const result = canApproveRevision(makeUser({ role: 'User' }), makeRevision());
       expect(result.success).toBe(false);
     });

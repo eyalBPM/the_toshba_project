@@ -4,7 +4,7 @@ import { listPendingImages } from '@/db/image-repository';
 
 export async function GET() {
   try {
-    await requireRole('Admin');
+    await requireRole('Admin', 'Senior', 'Moderator');
     const images = await listPendingImages();
     return apiSuccess(images);
   } catch (err) {
