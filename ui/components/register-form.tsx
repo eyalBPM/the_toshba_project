@@ -82,6 +82,7 @@ export function RegisterForm() {
             id="email"
             type="email"
             required
+            dir="ltr"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
