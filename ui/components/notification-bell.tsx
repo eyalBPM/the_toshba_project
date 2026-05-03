@@ -1,38 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { subscribeUnreadCount } from '@/lib/notification-events';
+import { useUnreadNotificationsCount } from '@/ui/hooks/use-notifications';
 
 export function NotificationBell() {
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function fetchCount() {
-      try {
-        const res = await fetch('/api/notifications?unread=true');
-        if (res.ok && mounted) {
-          const json = await res.json();
-          setUnreadCount(json.data?.unreadCount ?? 0);
-        }
-      } catch {
-        // Silently fail on poll errors
-      }
-    }
-
-    fetchCount();
-    const interval = setInterval(fetchCount, 600000);
-    const unsubscribe = subscribeUnreadCount((count) => {
-      if (mounted) setUnreadCount(count);
-    });
-    return () => {
-      mounted = false;
-      clearInterval(interval);
-      unsubscribe();
-    };
-  }, []);
+  const { data: unreadCount = 0 } = useUnreadNotificationsCount();
 
   return (
     <Link

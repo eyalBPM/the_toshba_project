@@ -57,7 +57,7 @@ export async function adminVerifyUser(input: AdminVerifyUserInput): Promise<void
       type: 'VERIFICATION_APPROVED',
       entityType: 'User',
       entityId: input.targetUserId,
-      message: 'חשבונך אומת על ידי מנהל מערכת',
+      message: 'חשבונך אומת על ידי הנהלת המערכת',
     });
   });
 }

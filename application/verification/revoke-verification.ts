@@ -46,7 +46,7 @@ export async function revokeVerification(input: RevokeVerificationInput): Promis
       type: 'VERIFICATION_REVOKED',
       entityType: 'User',
       entityId: input.targetUserId,
-      message: 'אימות חשבונך בוטל על ידי מנהל מערכת',
+      message: 'אימות חשבונך בוטל על ידי הנהלת המערכת',
     });
   });
 }

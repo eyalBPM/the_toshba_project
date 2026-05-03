@@ -1,107 +1,72 @@
 'use client';
 
-import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getNotificationLink } from '@/lib/notification-links';
-import { emitUnreadCount } from '@/lib/notification-events';
 import { InfiniteScrollTrigger } from './infinite-scroll-trigger';
-
-interface Notification {
-  id: string;
-  type: string;
-  entityType: string;
-  entityId: string;
-  message: string;
-  read: boolean;
-  createdAt: string;
-}
+import {
+  useMarkNotificationsRead,
+  useNotificationsList,
+  useUnreadNotificationsCount,
+  type NotificationItem,
+} from '@/ui/hooks/use-notifications';
 
 interface NotificationInboxProps {
-  initialNotifications: Notification[];
+  initialNotifications: NotificationItem[];
 }
 
 export function NotificationInbox({ initialNotifications }: NotificationInboxProps) {
   const router = useRouter();
-  const [notifications, setNotifications] = useState(initialNotifications);
-  const [markingAll, setMarkingAll] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(initialNotifications.length >= 20);
 
+  const initialPage = {
+    notifications: initialNotifications,
+    unreadCount: initialNotifications.filter((n) => !n.read).length,
+    nextCursor:
+      initialNotifications.length >= 20
+        ? initialNotifications[initialNotifications.length - 1].id
+        : null,
+  };
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch, isRefetching } =
+    useNotificationsList(initialPage);
+  const markRead = useMarkNotificationsRead();
+  const { data: serverUnreadCount } = useUnreadNotificationsCount();
+
+  const notifications = data?.pages.flatMap((p) => p.notifications) ?? [];
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const markingAll = markRead.isPending && markRead.variables === undefined;
+  const newCount =
+    typeof serverUnreadCount === 'number' ? Math.max(0, serverUnreadCount - unreadCount) : 0;
 
-  const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore || notifications.length === 0) return;
-    setLoadingMore(true);
-    try {
-      const lastId = notifications[notifications.length - 1].id;
-      const res = await fetch(`/api/notifications?cursor=${lastId}&limit=20`);
-      if (res.ok) {
-        const json = await res.json();
-        const newItems = json.data?.notifications ?? [];
-        if (newItems.length < 20) setHasMore(false);
-        setNotifications((prev) => [...prev, ...newItems]);
-      }
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [loadingMore, hasMore, notifications]);
-
-  async function handleMarkAllRead() {
-    setMarkingAll(true);
-    try {
-      const res = await fetch('/api/notifications/read', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-      if (res.ok) {
-        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-        emitUnreadCount(0);
-      }
-    } finally {
-      setMarkingAll(false);
-    }
-  }
-
-  function applyRead(id: string) {
-    const target = notifications.find((n) => n.id === id);
-    if (!target || target.read) return;
-    const nextUnread = notifications.filter((n) => !n.read && n.id !== id).length;
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-    );
-    emitUnreadCount(nextUnread);
-  }
-
-  async function markRead(id: string) {
-    applyRead(id);
-    await fetch('/api/notifications/read', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ notificationId: id }),
-    });
-  }
-
-  async function handleClick(notification: Notification) {
+  function handleClick(notification: NotificationItem) {
     const link = getNotificationLink(notification.entityType, notification.entityId);
-    if (!notification.read) {
-      applyRead(notification.id);
-      void fetch('/api/notifications/read', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notificationId: notification.id }),
-      });
-    }
+    if (!notification.read) markRead.mutate(notification.id);
     if (link) router.push(link);
   }
 
   return (
     <div className="space-y-3" dir="rtl">
+      {newCount > 0 && (
+        <div className="flex items-center justify-between rounded-md border border-amber-200 bg-amber-50 p-3">
+          <p className="text-sm text-amber-800">
+            {newCount === 1
+              ? 'יש התראה חדשה — רענן כדי לצפות בה'
+              : `יש ${newCount} התראות חדשות — רענן כדי לצפות בהן`}
+          </p>
+          <button
+            onClick={() => refetch()}
+            disabled={isRefetching}
+            className="text-sm font-medium text-amber-800 hover:underline disabled:opacity-50"
+            type="button"
+          >
+            {isRefetching ? 'מרענן...' : 'רענן'}
+          </button>
+        </div>
+      )}
       {unreadCount > 0 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-500">{unreadCount} התראות שלא נקראו</p>
           <button
-            onClick={handleMarkAllRead}
+            onClick={() => markRead.mutate(undefined)}
             disabled={markingAll}
             className="text-sm text-blue-600 hover:underline disabled:opacity-50"
           >
@@ -158,7 +123,7 @@ export function NotificationInbox({ initialNotifications }: NotificationInboxPro
                 </button>
                 {!n.read && (
                   <button
-                    onClick={() => markRead(n.id)}
+                    onClick={() => markRead.mutate(n.id)}
                     className="shrink-0 self-center rounded px-2 py-1 text-xs text-blue-600 hover:bg-blue-100"
                     title="סמן כנקרא"
                     type="button"
@@ -173,9 +138,9 @@ export function NotificationInbox({ initialNotifications }: NotificationInboxPro
       )}
 
       <InfiniteScrollTrigger
-        onTrigger={loadMore}
-        hasMore={hasMore}
-        isLoading={loadingMore}
+        onTrigger={() => fetchNextPage()}
+        hasMore={!!hasNextPage}
+        isLoading={isFetchingNextPage}
       />
     </div>
   );

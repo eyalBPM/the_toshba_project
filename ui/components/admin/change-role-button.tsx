@@ -13,7 +13,7 @@ interface ChangeRoleButtonProps {
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: 'User', label: 'משתמש רגיל' },
   { value: 'Moderator', label: 'מנהל תוכן' },
-  { value: 'Senior', label: 'בכיר' },
+  { value: 'Senior', label: 'מנהל בכיר' },
   { value: 'Admin', label: 'מנהל מערכת' },
 ];
 

@@ -13,7 +13,7 @@ export interface ChangeUserRoleInput {
 const ROLE_LABEL: Record<UserRole, string> = {
   User: 'משתמש רגיל',
   Moderator: 'מנהל תוכן',
-  Senior: 'בכיר',
+  Senior: 'מנהל בכיר',
   Admin: 'מנהל מערכת',
 };
 

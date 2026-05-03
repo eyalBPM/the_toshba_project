@@ -52,9 +52,9 @@ export function UsersSearch({ initialSearch, initialStatus, initialRole }: Props
         className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         <option value="">כל התפקידים</option>
-        <option value="Admin">מנהל</option>
-        <option value="Senior">בכיר</option>
-        <option value="Moderator">מנחה</option>
+        <option value="Admin">מנהל מערכת</option>
+        <option value="Senior">מנהל בכיר</option>
+        <option value="Moderator">מנהל תוכן</option>
         <option value="User">משתמש</option>
       </select>
       <button

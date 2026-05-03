@@ -14,9 +14,9 @@ const USER_STATUS_LABELS: Record<string, { label: string; variant: BadgeVariant 
 };
 
 const USER_ROLE_LABELS: Record<string, { label: string; variant: BadgeVariant }> = {
-  Admin: { label: 'מנהל', variant: 'red' },
-  Moderator: { label: 'מנחה', variant: 'blue' },
-  Senior: { label: 'בכיר', variant: 'blue' },
+  Admin: { label: 'מנהל מערכת', variant: 'red' },
+  Moderator: { label: 'מנהל תוכן', variant: 'blue' },
+  Senior: { label: 'מנהל בכיר', variant: 'blue' },
   User: { label: 'משתמש', variant: 'gray' },
 };
 
