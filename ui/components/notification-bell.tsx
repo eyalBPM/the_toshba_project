@@ -23,7 +23,7 @@ export function NotificationBell() {
     }
 
     fetchCount();
-    const interval = setInterval(fetchCount, 30000);
+    const interval = setInterval(fetchCount, 600000);
     const unsubscribe = subscribeUnreadCount((count) => {
       if (mounted) setUnreadCount(count);
     });
