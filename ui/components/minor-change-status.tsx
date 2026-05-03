@@ -22,15 +22,6 @@ export function MinorChangeStatus({ revisionId }: MinorChangeStatusProps) {
   }, [revisionId]);
 
   const pending = requests.find((r) => r.status === 'Pending');
-  const approved = requests.find((r) => r.status === 'Approved');
-
-  if (approved) {
-    return (
-      <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800" dir="rtl">
-        שינוי מינורי אושר — ניתן לערוך ללא איפוס ההסכמות
-      </div>
-    );
-  }
 
   if (pending) {
     return (

@@ -44,18 +44,26 @@ export default async function AdminMinorChangesPage() {
                   />
                 </div>
                 <p className="text-sm text-gray-600">{req.message}</p>
-                {revision && (
+                <div className="mt-2 flex gap-3 text-xs">
                   <Link
-                    href={
-                      revision.article
-                        ? `/articles/${revision.article.slug}/propose/${revision.id}`
-                        : `/revisions/${revision.id}`
-                    }
-                    className="mt-2 inline-block text-xs text-blue-600 hover:underline"
+                    href={`/admin/minor-changes/${req.id}`}
+                    className="text-blue-600 hover:underline"
                   >
-                    צפה בגרסה
+                    צפה בשינויים
                   </Link>
-                )}
+                  {revision && (
+                    <Link
+                      href={
+                        revision.article
+                          ? `/articles/${revision.article.slug}/propose/${revision.id}`
+                          : `/revisions/${revision.id}`
+                      }
+                      className="text-blue-600 hover:underline"
+                    >
+                      צפה בגרסה
+                    </Link>
+                  )}
+                </div>
               </div>
             );
           })}
