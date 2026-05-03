@@ -215,6 +215,11 @@ Each revision must store:
 If revision is current:
 - snapshot fields are copied to the Article (see Article entity above)
 
+### Pre-fill on creation:
+
+- When a revision is created **for an existing article** (articleId provided), the new draft is initialized with the current revision's `title`, `content`, and snapshot fields (`sourcesSnapshot`, `topicsSnapshot`, `sagesSnapshot`, `referencesSnapshot`, `contentLength`). The user then edits these to form their proposed update.
+- When a revision is created **for a new article** (no articleId), the user supplies a title and starts with empty content.
+
 ---
 
 ## Content System
@@ -454,6 +459,7 @@ Rules:
 - minor change requests can only be created for revisions in `Pending` status
 - Admin and Senior may also edit or delete a minor change request on any revision
 - on the revision's own MCRs, the revision creator retains full edit/delete rights regardless of who created the request
+- when the MCR editor is first opened (no existing pending MCR for the revision), the editor is pre-filled with the parent revision's current `title` and `content`. The user then edits these to form the minor-change proposal.
 
 ---
 

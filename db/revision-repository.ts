@@ -54,9 +54,29 @@ export async function createRevisionWithSnapshot(data: {
   content?: unknown;
   createdByUserId: string;
   articleId?: string;
+  snapshot?: SnapshotInput;
 }): Promise<DbRevision> {
   return prisma.$transaction(async (tx) => {
-    const snapshot = await tx.articleSnapshot.create({ data: {} });
+    const snap = data.snapshot;
+    const snapshot = await tx.articleSnapshot.create({
+      data: {
+        ...(snap?.sourcesSnapshot !== undefined
+          ? { sourcesSnapshot: snap.sourcesSnapshot as object }
+          : {}),
+        ...(snap?.topicsSnapshot !== undefined
+          ? { topicsSnapshot: snap.topicsSnapshot as object }
+          : {}),
+        ...(snap?.sagesSnapshot !== undefined
+          ? { sagesSnapshot: snap.sagesSnapshot as object }
+          : {}),
+        ...(snap?.referencesSnapshot !== undefined
+          ? { referencesSnapshot: snap.referencesSnapshot as object }
+          : {}),
+        ...(snap?.contentLength !== undefined
+          ? { contentLength: snap.contentLength }
+          : {}),
+      },
+    });
     const revision = await tx.articleRevision.create({
       data: {
         title: data.title,

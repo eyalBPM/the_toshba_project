@@ -37,7 +37,7 @@ export function ProposeRevisionButton({
       const res = await fetch('/api/revisions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'הצעת עדכון', articleId }),
+        body: JSON.stringify({ articleId }),
       });
       const json = await res.json();
       if (res.ok) {
