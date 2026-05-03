@@ -37,8 +37,8 @@ export function OpinionList({
 
   useEffect(() => {
     fetch(`/api/articles/${slug}/opinions`)
-      .then((res) => (res.ok ? res.json() : { data: [] }))
-      .then((json) => setResponses(json.data ?? []))
+      .then((res) => (res.ok ? res.json() : { data: { items: [] } }))
+      .then((json) => setResponses(json.data?.items ?? []))
       .finally(() => setLoading(false));
   }, [slug]);
 
