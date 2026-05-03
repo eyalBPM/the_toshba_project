@@ -82,10 +82,11 @@ export async function updateArticleCurrentRevision(
   articleId: string,
   revisionId: string,
   snapshotId: string,
+  title: string,
 ): Promise<DbArticle> {
   return prisma.article.update({
     where: { id: articleId },
-    data: { currentRevisionId: revisionId, snapshotId },
+    data: { currentRevisionId: revisionId, snapshotId, title },
     select: ARTICLE_SELECT,
   });
 }

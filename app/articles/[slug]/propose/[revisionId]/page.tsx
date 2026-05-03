@@ -89,13 +89,25 @@ export default async function ProposedRevisionPage({
         </div>
       )}
 
+      {/* Title diff */}
+      {currentRevision && currentRevision.title !== revision.title && (
+        <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm">
+          <p className="mb-1 text-xs font-medium text-amber-700">שינוי כותרת:</p>
+          <p className="text-gray-500 line-through">{currentRevision.title}</p>
+          <p className="font-medium text-gray-900">{revision.title}</p>
+        </div>
+      )}
+
       {/* Side-by-side content */}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <h2 className="mb-2 text-sm font-semibold text-gray-500">גרסה נוכחית</h2>
           <div className="rounded-lg border border-gray-200 bg-white p-4">
             {currentRevision ? (
-              <ContentRenderer content={currentRevision.content} />
+              <>
+                <h3 className="mb-2 text-base font-semibold">{currentRevision.title}</h3>
+                <ContentRenderer content={currentRevision.content} />
+              </>
             ) : (
               <p className="text-gray-400 text-sm">אין גרסה מאושרת</p>
             )}
@@ -104,6 +116,7 @@ export default async function ProposedRevisionPage({
         <div>
           <h2 className="mb-2 text-sm font-semibold text-blue-600">גרסה מוצעת</h2>
           <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+            <h3 className="mb-2 text-base font-semibold">{revision.title}</h3>
             <ContentRenderer content={revision.content} />
           </div>
         </div>

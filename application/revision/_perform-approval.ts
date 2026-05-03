@@ -67,8 +67,13 @@ export async function performApproval(input: PerformApprovalInput): Promise<void
       // Link the revision to the newly created article
       await linkRevisionToArticle(revision.id, articleId);
     } else {
-      // Existing article: update current revision + snapshot
-      await updateArticleCurrentRevision(articleId, revision.id, revision.snapshotId);
+      // Existing article: update current revision + snapshot + title
+      await updateArticleCurrentRevision(
+        articleId,
+        revision.id,
+        revision.snapshotId,
+        revision.title,
+      );
     }
 
     // 3. Handle competing revisions

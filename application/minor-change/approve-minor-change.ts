@@ -70,6 +70,7 @@ export async function approveMinorChange(input: ApproveMinorChangeInput): Promis
               revision.articleId,
               updatedRevision.id,
               updatedRevision.snapshotId,
+              updatedRevision.title,
             );
           }
         }
