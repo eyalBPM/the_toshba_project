@@ -195,6 +195,20 @@ export async function deleteRevision(id: string): Promise<void> {
   await prisma.articleRevision.delete({ where: { id } });
 }
 
+export async function findActiveRevisionByArticleAndUser(
+  articleId: string,
+  userId: string,
+): Promise<{ id: string; status: RevisionStatus } | null> {
+  return prisma.articleRevision.findFirst({
+    where: {
+      articleId,
+      createdByUserId: userId,
+      status: { in: ['Draft', 'Pending'] },
+    },
+    select: { id: true, status: true },
+  });
+}
+
 export async function listDraftRevisionsByArticle(articleId: string): Promise<DbRevision[]> {
   return prisma.articleRevision.findMany({
     where: { articleId, status: 'Draft' },

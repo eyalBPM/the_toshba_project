@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { requireAuth } from '@/lib/auth-utils';
+import { getCurrentUser, requireAuth } from '@/lib/auth-utils';
 import { apiSuccess, ApiErrors } from '@/lib/api-error';
 import { findRevisionById } from '@/db/revision-repository';
 import { updateRevision } from '@/application/revision/update-revision';
@@ -26,8 +26,15 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const revision = await findRevisionById(id);
+    const [revision, currentUser] = await Promise.all([
+      findRevisionById(id),
+      getCurrentUser(),
+    ]);
     if (!revision) return ApiErrors.notFound('Revision not found');
+    // Draft revisions are private to their owner
+    if (revision.status === 'Draft' && currentUser?.id !== revision.createdByUserId) {
+      return ApiErrors.notFound('Revision not found');
+    }
     return apiSuccess(revision);
   } catch {
     return ApiErrors.internal();

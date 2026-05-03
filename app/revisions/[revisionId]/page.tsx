@@ -26,12 +26,16 @@ export default async function RevisionFallbackPage({
 
   if (!revision) notFound();
 
+  const isOwner = currentUser?.id === revision.createdByUserId;
+
+  // Draft revisions are private to their owner
+  if (revision.status === 'Draft' && !isOwner) notFound();
+
   // If the revision is linked to an article, redirect to the article's propose page
   if (revision.article) {
     redirect(`/articles/${revision.article.slug}/propose/${revisionId}`);
   }
 
-  const isOwner = currentUser?.id === revision.createdByUserId;
   const canEdit = isOwner && (revision.status === 'Draft' || revision.status === 'Pending');
   const pendingMcr = isOwner && revision.status === 'Pending'
     ? await findPendingRequestByRevision(revisionId)

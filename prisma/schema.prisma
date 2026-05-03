@@ -150,6 +150,10 @@ model ArticleRevision {
   @@index([createdByUserId])
   @@index([createdAt])
   @@index([articleId, status])
+  // NOTE: a partial unique index "ArticleRevision_active_per_user_per_article_unique"
+  // on (articleId, createdByUserId) WHERE status IN ('Draft','Pending') AND articleId IS NOT NULL
+  // is created via the 20260503211025 migration. Prisma cannot express partial unique
+  // indexes declaratively, so do not delete that index when running migrate dev.
 }
 
 // ─── Source (predefined lookup table) ────────────────────

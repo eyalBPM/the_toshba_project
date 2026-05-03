@@ -1,7 +1,11 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { findArticleBySlug } from '@/db/article-repository';
-import { listPendingRevisionsByArticle, findRevisionById } from '@/db/revision-repository';
+import {
+  listPendingRevisionsByArticle,
+  findRevisionById,
+  findActiveRevisionByArticleAndUser,
+} from '@/db/revision-repository';
 import { getCurrentUser } from '@/lib/auth-utils';
 import { ContentRenderer } from '@/ui/components/content-renderer';
 import { StatusBadge } from '@/ui/components/status-badge';
@@ -21,9 +25,12 @@ export default async function ArticlePage({
 
   if (!article) notFound();
 
-  const [currentRevision, pendingRevisions] = await Promise.all([
+  const [currentRevision, pendingRevisions, existingActiveRevision] = await Promise.all([
     article.currentRevisionId ? findRevisionById(article.currentRevisionId) : null,
     listPendingRevisionsByArticle(article.id),
+    currentUser
+      ? findActiveRevisionByArticleAndUser(article.id, currentUser.id)
+      : Promise.resolve(null),
   ]);
 
   const snap = article.snapshot;
@@ -62,7 +69,11 @@ export default async function ArticlePage({
                 היסטוריית גרסאות
               </Link>
               {isVerified && (
-                <ProposeRevisionButton articleId={article.id} slug={slug} />
+                <ProposeRevisionButton
+                  articleId={article.id}
+                  slug={slug}
+                  existingActiveRevisionId={existingActiveRevision?.id ?? null}
+                />
               )}
             </div>
           </div>

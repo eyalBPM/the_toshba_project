@@ -29,11 +29,14 @@ export default async function ProposedRevisionPage({
   if (!article || !revision) notFound();
   if (revision.articleId !== article.id) notFound();
 
+  const isOwner = currentUser?.id === revision.createdByUserId;
+
+  // Draft revisions are private to their owner
+  if (revision.status === 'Draft' && !isOwner) notFound();
+
   const currentRevision = article.currentRevisionId
     ? await findRevisionById(article.currentRevisionId)
     : null;
-
-  const isOwner = currentUser?.id === revision.createdByUserId;
   const pendingMcr = isOwner && revision.status === 'Pending'
     ? await findPendingRequestByRevision(revisionId)
     : null;

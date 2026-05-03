@@ -577,6 +577,15 @@ Rules:
 
 # 🔒 Permissions
 
+## Visibility-based
+
+Draft revisions are PRIVATE to their owner:
+
+- A revision in `Draft` status is visible ONLY to its `createdByUserId` (the owner)
+- Any other user — including Admin, Senior, Moderator, and unauthenticated visitors — MUST be treated as if the draft does not exist (404 / `notFound()`)
+- Applies to all surfaces: every page that renders a revision, every API endpoint that returns one, and any list that would otherwise expose drafts of others
+- `Pending`, `Approved`, `Rejected`, and `Obsolete` revisions are public (no owner gate at the view layer; role/status gates still apply to actions)
+
 ## Status-based
 
 Only verified users may:
@@ -630,8 +639,22 @@ Each higher role inherits all permissions of the roles below it.
 
 ## Draft Rules
 
-- Users can have multiple drafts
+- Users can have multiple drafts across different articles, but at most one active revision per article (see "One Active Revision Per Article" below)
 - Drafts can be deleted
+
+---
+
+## One Active Revision Per Article (Hard Constraint)
+
+A user MUST NOT have more than one **active** revision for the same article.
+
+- "Active" = status is `Draft` or `Pending`. `Approved`, `Rejected`, and `Obsolete` are terminal/historical and do NOT count.
+- Applies per `(articleId, createdByUserId)`. New-article drafts (`articleId IS NULL`) are exempt — a user may have many such drafts in parallel.
+- Enforced at the database layer via a partial unique index on `(articleId, createdByUserId)` filtered to active statuses, AND at the application layer in `createRevision`.
+
+### Behavior when a user already has an active revision for an article:
+- API: creating another active revision returns HTTP 409 `CONFLICT` with the existing revision's id, so clients can redirect.
+- UI: in place of the "הצע עדכון" button, the user sees a "צפייה בהצעה הקיימת שלך" link that goes to the existing draft/pending revision.
 
 ## Verification Request Status
 

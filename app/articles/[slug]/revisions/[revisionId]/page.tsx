@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { findRevisionById } from '@/db/revision-repository';
 import { findArticleBySlug } from '@/db/article-repository';
+import { getCurrentUser } from '@/lib/auth-utils';
 import { ContentRenderer } from '@/ui/components/content-renderer';
 import { StatusBadge } from '@/ui/components/status-badge';
 
@@ -11,13 +12,19 @@ export default async function HistoricalRevisionPage({
   params: Promise<{ slug: string; revisionId: string }>;
 }) {
   const { slug, revisionId } = await params;
-  const [article, revision] = await Promise.all([
+  const [article, revision, currentUser] = await Promise.all([
     findArticleBySlug(slug),
     findRevisionById(revisionId),
+    getCurrentUser(),
   ]);
 
   if (!article || !revision) notFound();
   if (revision.articleId !== article.id) notFound();
+
+  // Draft revisions are private to their owner
+  if (revision.status === 'Draft' && currentUser?.id !== revision.createdByUserId) {
+    notFound();
+  }
 
   const topics = Array.isArray(revision.snapshot.topicsSnapshot)
     ? (revision.snapshot.topicsSnapshot as Array<{ text: string }>)
