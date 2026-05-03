@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       msg === 'Verifier not found' ||
       msg === 'Verifier must be a verified user' ||
       msg === 'Cannot request verification from yourself' ||
-      msg === 'A pending request to this verifier already exists'
+      msg === 'You already have a pending verification request'
     ) {
       return ApiErrors.badRequest(msg);
     }

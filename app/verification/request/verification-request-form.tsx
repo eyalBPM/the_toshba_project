@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserPicker } from '@/ui/components/user-picker';
 
-export function VerificationRequestForm({ userId }: { userId: string }) {
+export function VerificationRequestForm({ userId: _userId }: { userId: string }) {
   const router = useRouter();
   const [verifierId, setVerifierId] = useState('');
   const [message, setMessage] = useState('');
@@ -34,7 +34,7 @@ export function VerificationRequestForm({ userId }: { userId: string }) {
         setError(json.error?.message ?? 'אירעה שגיאה');
         return;
       }
-      router.push(`/users/${userId}`);
+      router.refresh();
     } catch {
       setError('אירעה שגיאה');
     } finally {

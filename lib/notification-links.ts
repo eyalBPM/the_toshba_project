@@ -1,4 +1,7 @@
-export function getNotificationLink(entityType: string, entityId: string): string {
+export function getNotificationLink(
+  entityType: string,
+  entityId: string,
+): string | null {
   switch (entityType) {
     case 'ArticleRevision':
       return `/revisions/${entityId}`;
@@ -13,6 +16,6 @@ export function getNotificationLink(entityType: string, entityId: string): strin
     case 'OpinionResponse':
       return `/opinions/${entityId}`;
     default:
-      return '/notifications';
+      return null;
   }
 }

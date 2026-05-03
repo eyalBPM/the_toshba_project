@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth-utils';
+import { findPendingRequestByRequester } from '@/db/verification-repository';
 import { VerificationRequestForm } from './verification-request-form';
+import { PendingRequestPanel } from './pending-request-panel';
 
 export default async function VerificationRequestPage() {
   const user = await getCurrentUser();
@@ -17,10 +19,21 @@ export default async function VerificationRequestPage() {
     );
   }
 
+  const pending = await findPendingRequestByRequester(user.id);
+
   return (
     <main className="mx-auto max-w-lg px-4 py-8">
       <h1 className="mb-6 text-2xl font-bold">בקשת אימות</h1>
-      <VerificationRequestForm userId={user.id} />
+      {pending ? (
+        <PendingRequestPanel
+          requestId={pending.id}
+          verifierName={pending.verifier.name}
+          message={pending.message}
+          createdAt={pending.createdAt.toISOString()}
+        />
+      ) : (
+        <VerificationRequestForm userId={user.id} />
+      )}
     </main>
   );
 }

@@ -36,6 +36,17 @@ export function AppHeader() {
               <Link href="/drafts" className="text-sm text-gray-600 hover:text-gray-900">
                 טיוטות
               </Link>
+              <Link href="/users" className="text-sm text-gray-600 hover:text-gray-900">
+                משתמשים
+              </Link>
+              {currentUser?.status === 'PendingVerification' && (
+                <Link
+                  href="/verification/request"
+                  className="text-sm text-amber-700 hover:text-amber-900"
+                >
+                  בקשת אימות
+                </Link>
+              )}
               {(currentUser?.role === 'Admin' || currentUser?.role === 'Senior') && (
                 <Link href="/admin" className="text-sm text-gray-600 hover:text-gray-900">
                   ניהול

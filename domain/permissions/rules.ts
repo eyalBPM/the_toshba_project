@@ -41,3 +41,11 @@ export function canMergeTopicsAndSages(role: UserRole): boolean {
 export function canManageRoles(role: UserRole): boolean {
   return role === 'Admin';
 }
+
+export function canDirectlyVerifyUsers(role: UserRole): boolean {
+  return role === 'Admin' || role === 'Senior';
+}
+
+export function canRevokeVerification(role: UserRole): boolean {
+  return role === 'Admin' || role === 'Senior';
+}

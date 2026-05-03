@@ -29,8 +29,8 @@ export async function changeUserRole(input: ChangeUserRoleInput): Promise<void> 
   const targetUser = await findUserById(input.targetUserId);
   if (!targetUser) throw new Error('User not found');
 
-  if (targetUser.status !== 'VerifiedUser' && input.newRole !== 'User') {
-    throw new Error('Can only assign elevated roles to verified users');
+  if (targetUser.status !== 'VerifiedUser') {
+    throw new Error('Cannot change role of unverified users');
   }
 
   if (targetUser.role === input.newRole) {

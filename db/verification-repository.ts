@@ -89,6 +89,19 @@ export async function findPendingRequestBetween(
   });
 }
 
+export async function findPendingRequestByRequester(
+  requestingUserId: string,
+): Promise<DbVerificationRequest | null> {
+  return prisma.verificationRequest.findFirst({
+    where: { requestingUserId, status: 'Pending' },
+    select: REQUEST_SELECT,
+  });
+}
+
+export async function deleteVerificationRequest(id: string): Promise<void> {
+  await prisma.verificationRequest.delete({ where: { id } });
+}
+
 export async function updateVerificationRequestStatus(
   id: string,
   status: VerificationRequestStatus,
@@ -116,5 +129,6 @@ export async function findVerificationByUserId(
   return prisma.userVerification.findFirst({
     where: { verifiedUserId },
     select: VERIFICATION_SELECT,
+    orderBy: { createdAt: 'desc' },
   });
 }

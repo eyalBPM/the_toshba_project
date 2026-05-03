@@ -3,7 +3,7 @@ import { canRequestVerification } from '@/domain/verification/rules';
 import { findUserById } from '@/db/user-repository';
 import {
   createVerificationRequest,
-  findPendingRequestBetween,
+  findPendingRequestByRequester,
 } from '@/db/verification-repository';
 import { createAuditLog } from '@/db/audit-log-repository';
 import { createNotification } from '@/db/notification-repository';
@@ -37,12 +37,9 @@ export async function requestVerification(
     throw new Error('Cannot request verification from yourself');
   }
 
-  const existing = await findPendingRequestBetween(
-    input.requestingUser.id,
-    input.requestedVerifierId,
-  );
+  const existing = await findPendingRequestByRequester(input.requestingUser.id);
   if (existing) {
-    throw new Error('A pending request to this verifier already exists');
+    throw new Error('You already have a pending verification request');
   }
 
   const request = await createVerificationRequest({

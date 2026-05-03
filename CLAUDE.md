@@ -20,6 +20,18 @@ Do NOT jump directly to coding.
 
 ---
 
+## 📌 Spec Consistency Rule (MANDATORY)
+
+This `CLAUDE.md` file is the **single source of truth** for the system's rules, behaviors, permissions, entities, and workflows.
+
+**Whenever the user requests a change to any rule of the system** — permissions, role capabilities, entity fields, state machines, validation rules, workflows, UI policies, API contracts, etc. — you MUST update `CLAUDE.md` in the same change to keep the spec consistent with the implementation.
+
+This applies even when the change appears small (e.g., adding/removing a permission, relaxing a constraint, changing a status transition, adding a new admin action). If a rule changes in code, the rule MUST also change in `CLAUDE.md`.
+
+When unsure whether a change qualifies as a "rule change," err on the side of updating the spec.
+
+---
+
 # 🎯 Project Overview
 
 A **community-driven knowledge base** where users collaboratively build structured articles.
@@ -545,10 +557,20 @@ Roles (hierarchical — each higher role inherits all permissions of the roles b
 
 Rules:
 
-- only verified users may verify
+- only verified users may verify through the request flow
 - user becomes verified after approval
 - all actions must be recorded
-- no admin shortcut flow (verification is always user-based)
+- Admin and Senior may also verify a Pending user directly from the admin users page, without an existing VerificationRequest. When done this way:
+  - the acting Admin/Senior is recorded as `verifiedByUserId` on the new UserVerification
+  - if the target user already has a Pending VerificationRequest, it is auto-closed as `Approved` so no dangling request remains
+  - the action is recorded in the audit log as `VERIFICATION_GRANTED_BY_ADMIN`
+  - UI policy on the requester's own profile (`/users/[userId]`): a request whose status is `Approved` but whose `requestedVerifierId` does NOT match the user's `UserVerification.verifiedByUserId` MUST be displayed as "אומת על ידי המערכת" — not as "אושר", to avoid implying the requested verifier approved it
+- Admin and Senior may also revoke verification of a verified user directly from the admin users page. Constraints:
+  - only verified users whose role is `User` may have their verification revoked — Moderators, Seniors, and Admins cannot have their verification revoked (their role must be demoted to `User` first)
+  - the user's status flips back to `PendingVerification`
+  - historical UserVerification records are preserved (not deleted) for audit purposes
+  - the action is recorded in the audit log as `VERIFICATION_REVOKED_BY_ADMIN`
+  - UI policy on the user's profile (`/users/[userId]`): historical UserVerification records MUST NOT be displayed when the user's current status is `PendingVerification` (e.g., after a revocation). The "אומת על ידי X" line and any derived UI cues (such as the admin-closed request label) are gated on the user's current status, not on the existence of UserVerification records. Likewise, in the "בקשות אימות שלי" list on the user's own profile, requests with status `Approved` MUST be hidden when the user's current status is `PendingVerification` — only `Pending` and `Rejected` requests are shown in that case (since a previously-approved verification has been undone).
 - each verified user record must store verifiedByUserId
 
 ---
@@ -587,6 +609,8 @@ Each higher role inherits all permissions of the roles below it.
   - rejection must include a note/message
   - revision author must be notified
 - create / edit / delete minor change requests on any revision
+- directly verify a Pending user from the admin users page, without requiring an existing VerificationRequest
+- revoke verification of a verified user (only allowed when the target's role is `User`)
 
 ### Admin (inherits Senior)
 - manage user roles (grant, change, demote — including assigning other Admins)

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { subscribeUnreadCount } from '@/lib/notification-events';
 
 export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -23,9 +24,13 @@ export function NotificationBell() {
 
     fetchCount();
     const interval = setInterval(fetchCount, 30000);
+    const unsubscribe = subscribeUnreadCount((count) => {
+      if (mounted) setUnreadCount(count);
+    });
     return () => {
       mounted = false;
       clearInterval(interval);
+      unsubscribe();
     };
   }, []);
 

@@ -69,10 +69,6 @@ export async function markAllAsRead(userId: string): Promise<void> {
   });
 }
 
-export async function deleteNotification(notificationId: string): Promise<void> {
-  await prisma.notification.delete({ where: { id: notificationId } });
-}
-
 export async function findNotificationById(
   notificationId: string,
 ): Promise<DbNotification | null> {

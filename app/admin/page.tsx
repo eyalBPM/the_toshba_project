@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { prisma } from '@/db/prisma';
+import { getCurrentUser } from '@/lib/auth-utils';
+import { ResetCacheButton } from '@/ui/components/admin/reset-cache-button';
 
 async function getDashboardCounts() {
   const [pendingRevisions, pendingMinorChanges, pendingImages, totalUsers] =
@@ -13,7 +15,8 @@ async function getDashboardCounts() {
 }
 
 export default async function AdminDashboard() {
-  const counts = await getDashboardCounts();
+  const [counts, currentUser] = await Promise.all([getDashboardCounts(), getCurrentUser()]);
+  const isAdmin = currentUser?.role === 'Admin';
 
   const cards = [
     { label: 'גרסאות ממתינות', count: counts.pendingRevisions, href: '/admin/revisions' },
@@ -24,7 +27,10 @@ export default async function AdminDashboard() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">לוח בקרה</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">לוח בקרה</h1>
+        {isAdmin && <ResetCacheButton />}
+      </div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {cards.map((card) => (
           <Link

@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getNotificationLink } from '@/lib/notification-links';
+import { emitUnreadCount } from '@/lib/notification-events';
 import { InfiniteScrollTrigger } from './infinite-scroll-trigger';
 
 interface Notification {
@@ -55,30 +56,43 @@ export function NotificationInbox({ initialNotifications }: NotificationInboxPro
       });
       if (res.ok) {
         setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+        emitUnreadCount(0);
       }
     } finally {
       setMarkingAll(false);
     }
   }
 
+  function applyRead(id: string) {
+    const target = notifications.find((n) => n.id === id);
+    if (!target || target.read) return;
+    const nextUnread = notifications.filter((n) => !n.read && n.id !== id).length;
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    );
+    emitUnreadCount(nextUnread);
+  }
+
+  async function markRead(id: string) {
+    applyRead(id);
+    await fetch('/api/notifications/read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notificationId: id }),
+    });
+  }
+
   async function handleClick(notification: Notification) {
+    const link = getNotificationLink(notification.entityType, notification.entityId);
     if (!notification.read) {
-      await fetch('/api/notifications/read', {
+      applyRead(notification.id);
+      void fetch('/api/notifications/read', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notificationId: notification.id }),
       });
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n)),
-      );
     }
-    const link = getNotificationLink(notification.entityType, notification.entityId);
-    router.push(link);
-  }
-
-  async function handleDelete(id: string) {
-    await fetch(`/api/notifications/${id}`, { method: 'DELETE' });
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    if (link) router.push(link);
   }
 
   return (
@@ -99,39 +113,63 @@ export function NotificationInbox({ initialNotifications }: NotificationInboxPro
       {notifications.length === 0 ? (
         <p className="text-gray-400">אין התראות.</p>
       ) : (
-        <div className="space-y-2">
-          {notifications.map((n) => (
-            <div
-              key={n.id}
-              className={`flex items-start justify-between rounded-md border p-3 ${
-                n.read
-                  ? 'border-gray-200 bg-white'
-                  : 'border-blue-200 bg-blue-50'
-              }`}
-            >
-              <button
-                onClick={() => handleClick(n)}
-                className="flex-1 text-right"
+        <ul className="space-y-2">
+          {notifications.map((n) => {
+            const link = getNotificationLink(n.entityType, n.entityId);
+            const hasLink = link !== null;
+            return (
+              <li
+                key={n.id}
+                className={`flex items-start gap-2 rounded-md border p-3 transition-colors ${
+                  n.read
+                    ? 'border-gray-200 bg-gray-50 text-gray-500 opacity-75'
+                    : 'border-blue-200 bg-blue-50'
+                }`}
               >
-                <p className="text-sm text-gray-800">{n.message}</p>
-                <p className="mt-1 text-xs text-gray-400">
-                  {new Date(n.createdAt).toLocaleDateString('he-IL')}{' '}
-                  {new Date(n.createdAt).toLocaleTimeString('he-IL', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </p>
-              </button>
-              <button
-                onClick={() => handleDelete(n.id)}
-                className="mr-2 shrink-0 text-xs text-gray-400 hover:text-red-500"
-                title="מחק"
-              >
-                &times;
-              </button>
-            </div>
-          ))}
-        </div>
+                {!n.read && (
+                  <span
+                    aria-hidden="true"
+                    className="mt-1.5 inline-block h-2 w-2 shrink-0 rounded-full bg-blue-500"
+                  />
+                )}
+                <button
+                  onClick={() => handleClick(n)}
+                  className={`flex-1 text-right ${hasLink ? 'cursor-pointer' : 'cursor-default'}`}
+                  type="button"
+                >
+                  <p className={`text-sm ${n.read ? 'text-gray-600' : 'text-gray-800'}`}>
+                    {n.message}
+                  </p>
+                  <div className="mt-1 flex items-center gap-2 text-xs text-gray-400">
+                    <span>
+                      {new Date(n.createdAt).toLocaleDateString('he-IL')}{' '}
+                      {new Date(n.createdAt).toLocaleTimeString('he-IL', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                    {hasLink && (
+                      <span className="inline-flex items-center gap-0.5 text-blue-600">
+                        <span aria-hidden="true">←</span>
+                        <span>פתיחה</span>
+                      </span>
+                    )}
+                  </div>
+                </button>
+                {!n.read && (
+                  <button
+                    onClick={() => markRead(n.id)}
+                    className="shrink-0 self-center rounded px-2 py-1 text-xs text-blue-600 hover:bg-blue-100"
+                    title="סמן כנקרא"
+                    type="button"
+                  >
+                    סמן כנקרא
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       )}
 
       <InfiniteScrollTrigger
