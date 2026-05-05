@@ -64,12 +64,14 @@ export default async function AdminMinorChangeDetailPage({
               <div>
                 <h3 className="mb-1 text-xs font-semibold text-gray-500">גרסה נוכחית</h3>
                 <div className="rounded-lg border border-gray-200 bg-white p-3 text-sm">
+                  <h4 className="mb-2 text-base font-semibold">{revision.title}</h4>
                   <ContentRenderer content={revision.content} />
                 </div>
               </div>
               <div>
                 <h3 className="mb-1 text-xs font-semibold text-blue-600">שינוי מוצע</h3>
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm">
+                  <h4 className="mb-2 text-base font-semibold">{request.title ?? revision.title}</h4>
                   <ContentRenderer content={request.content ?? revision.content} />
                 </div>
               </div>
