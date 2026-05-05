@@ -59,16 +59,18 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const user = await requireAuth();
     const { id } = await params;
+    const targetClusterId = new URL(request.url).searchParams.get('targetClusterId') ?? undefined;
 
     await deleteOpinionCluster({
       user: { id: user.id, status: user.status, role: user.role },
       clusterId: id,
+      targetClusterId,
     });
 
     return apiSuccess({ deleted: true });
@@ -76,7 +78,10 @@ export async function DELETE(
     const msg = err instanceof Error ? err.message : '';
     if (msg === 'UNAUTHORIZED') return ApiErrors.unauthorized();
     if (msg === 'Cluster not found') return ApiErrors.notFound(msg);
+    if (msg === 'Target cluster not found') return ApiErrors.notFound(msg);
     if (msg.includes('Only')) return ApiErrors.forbidden(msg);
+    if (msg.startsWith('Cannot delete')) return ApiErrors.validationError(msg);
+    if (msg.startsWith('Target cluster')) return ApiErrors.validationError(msg);
     return ApiErrors.internal();
   }
 }

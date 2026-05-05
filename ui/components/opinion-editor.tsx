@@ -17,16 +17,19 @@ import { SourcesPanel } from './tiptap-editor/sources-panel';
 import { TopicsPanel } from './tiptap-editor/topics-panel';
 import { SagesPanel } from './tiptap-editor/sages-panel';
 import { ReferencesPanel } from './tiptap-editor/references-panel';
+import { OpinionClusterControls } from './opinion-cluster-controls';
 
 interface OpinionEditorProps {
   responseId: string;
   initialContent: unknown;
+  initialClusterId: string;
   deleteRedirectUrl: string;
 }
 
 export function OpinionEditor({
   responseId,
   initialContent,
+  initialClusterId,
   deleteRedirectUrl,
 }: OpinionEditorProps) {
   const router = useRouter();
@@ -92,6 +95,11 @@ export function OpinionEditor({
 
   return (
     <div className="space-y-4">
+      <OpinionClusterControls
+        responseId={responseId}
+        initialClusterId={initialClusterId}
+      />
+
       {/* Editor */}
       <div className="rounded-lg border border-gray-300 bg-white overflow-hidden">
         <EditorToolbar editor={editor} />

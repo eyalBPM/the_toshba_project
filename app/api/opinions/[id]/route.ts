@@ -1,14 +1,20 @@
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { requireAuth } from '@/lib/auth-utils';
+import { requireAuth, getCurrentUser } from '@/lib/auth-utils';
 import { apiSuccess, ApiErrors } from '@/lib/api-error';
 import { findResponseById } from '@/db/opinion-repository';
 import { updateOpinionResponse } from '@/application/opinion/update-response';
 import { deleteOpinionResponse } from '@/application/opinion/delete-response';
+import { canViewOpinionResponse } from '@/application/opinion/can-view-response';
 
-const updateSchema = z.object({
-  content: z.unknown(),
-});
+const updateSchema = z
+  .object({
+    content: z.unknown().optional(),
+    clusterId: z.string().min(1).optional(),
+  })
+  .refine((v) => v.content !== undefined || v.clusterId !== undefined, {
+    message: 'At least one of content or clusterId is required',
+  });
 
 export async function GET(
   _request: Request,
@@ -16,8 +22,15 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const response = await findResponseById(id);
+    const [response, viewer] = await Promise.all([
+      findResponseById(id),
+      getCurrentUser(),
+    ]);
     if (!response) return ApiErrors.notFound('Response not found');
+
+    const allowed = await canViewOpinionResponse(response, viewer?.id ?? null);
+    if (!allowed) return ApiErrors.notFound('Response not found');
+
     return apiSuccess(response);
   } catch {
     return ApiErrors.internal();
@@ -43,6 +56,7 @@ export async function PATCH(
       user: { id: user.id, status: user.status, role: user.role },
       responseId: id,
       content: parsed.data.content,
+      clusterId: parsed.data.clusterId,
     });
 
     return apiSuccess(updated);
@@ -50,6 +64,7 @@ export async function PATCH(
     const msg = err instanceof Error ? err.message : '';
     if (msg === 'UNAUTHORIZED') return ApiErrors.unauthorized();
     if (msg === 'Response not found') return ApiErrors.notFound(msg);
+    if (msg === 'Target cluster not found') return ApiErrors.notFound(msg);
     if (msg.includes('Only')) return ApiErrors.forbidden(msg);
     return ApiErrors.internal();
   }

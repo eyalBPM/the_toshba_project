@@ -8,6 +8,7 @@ import {
   addClusterAccess,
 } from '@/db/opinion-repository';
 import { canManageClusterAccess } from '@/domain/opinion/rules';
+import { createNotification } from '@/db/notification-repository';
 import type { ClusterVisibility } from '@/domain/types';
 
 const addSchema = z.object({
@@ -64,6 +65,17 @@ export async function POST(
     if (!guard.success) return ApiErrors.forbidden(guard.error);
 
     const access = await addClusterAccess(id, parsed.data.userId);
+
+    if (parsed.data.userId !== user.id) {
+      await createNotification({
+        userId: parsed.data.userId,
+        type: 'CLUSTER_SHARED',
+        entityType: 'OpinionCluster',
+        entityId: id,
+        message: `שותף איתך מקבץ חוות דעת חדש: "${cluster.title}"`,
+      });
+    }
+
     return apiSuccess(access, 201);
   } catch (err) {
     const msg = err instanceof Error ? err.message : '';

@@ -489,6 +489,24 @@ Rules:
 - access for Shared visibility is controlled by an explicit list of user IDs
 - no role-based sharing (for now)
 
+### Cluster management from the opinion edit page
+
+The opinion edit page (`/articles/[slug]/opinion/[id]/edit`) MUST expose four cluster management capabilities to the response author:
+
+1. **Assign**: change which of the author's clusters the response belongs to.
+2. **Add**: create a new cluster (title, optional introduction, visibility). When visibility is `Shared`, the form must also let the author select the specific users that get access.
+3. **Edit**: rename / change introduction / change visibility of any cluster the author owns. When visibility is `Shared`, the form must also let the author add or remove users from the access list (the chosen list is sent as `accessUserIds` on `PATCH /api/clusters/:id`, which replaces the previous list).
+4. **Delete**: delete a cluster the author owns. Constraints:
+   - The author MUST own at least one other cluster — otherwise deletion is refused (`Cannot delete the only cluster`).
+   - If the cluster contains any responses, the author MUST pick a target cluster (also owned by them) into which ALL responses in the deleted cluster are moved before the cluster row is deleted. The target cluster id is passed as `?targetClusterId=...` on `DELETE /api/clusters/:id`.
+   - The reassign-then-delete flow runs server-side; the `OpinionResponse.cluster` cascade only fires when there are no remaining responses.
+
+The same constraints apply wherever a cluster is deleted (not only this page) and are enforced in the application layer (`deleteOpinionCluster`).
+
+### Reassigning a response to a different cluster
+
+`PATCH /api/opinions/:id` accepts an optional `clusterId` field. When supplied, the server verifies the target cluster is owned by the same user and updates the response's `clusterId`. `content` and `clusterId` are both optional individually, but at least one must be present.
+
 ## Responses
 
 - id
@@ -719,6 +737,7 @@ Notifications are created for:
 - new agreements on user's revision
 - verification request status changes
 - role changes (any promotion or demotion)
+- being added to a Shared opinion `Cluster`'s access list (one notification per newly-added user, type `CLUSTER_SHARED`, `entityType: 'OpinionCluster'`). Removing a user from the access list does NOT generate a notification. Existing users in the list when the access list is re-saved are not re-notified.
 - any other relevant user-impacting event
 
 ---

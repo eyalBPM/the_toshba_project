@@ -9,6 +9,7 @@ import {
   type DbOpinionCluster,
 } from '@/db/opinion-repository';
 import { createAuditLog } from '@/db/audit-log-repository';
+import { createNotification } from '@/db/notification-repository';
 
 export interface UpdateClusterInput {
   user: DomainUser;
@@ -38,6 +39,7 @@ export async function updateOpinionCluster(
   });
 
   // Sync access list if provided and visibility is Shared
+  const addedUserIds: string[] = [];
   if (input.accessUserIds !== undefined) {
     const currentAccess = await listClusterAccessUsers(input.clusterId);
     const currentUserIds = new Set(currentAccess.map((a) => a.userId));
@@ -54,8 +56,20 @@ export async function updateOpinionCluster(
     for (const userId of input.accessUserIds) {
       if (!currentUserIds.has(userId)) {
         await addClusterAccess(input.clusterId, userId);
+        addedUserIds.push(userId);
       }
     }
+  }
+
+  for (const userId of addedUserIds) {
+    if (userId === input.user.id) continue;
+    await createNotification({
+      userId,
+      type: 'CLUSTER_SHARED',
+      entityType: 'OpinionCluster',
+      entityId: input.clusterId,
+      message: `שותף איתך מקבץ חוות דעת חדש: "${updated.title}"`,
+    });
   }
 
   await createAuditLog({

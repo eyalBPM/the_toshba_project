@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { findResponseById } from '@/db/opinion-repository';
 import { getCurrentUser } from '@/lib/auth-utils';
+import { canViewOpinionResponse } from '@/application/opinion/can-view-response';
 import { ContentRenderer } from '@/ui/components/content-renderer';
 
 export default async function OpinionViewPage({
@@ -16,6 +17,9 @@ export default async function OpinionViewPage({
   ]);
 
   if (!response) notFound();
+
+  const allowed = await canViewOpinionResponse(response, currentUser?.id ?? null);
+  if (!allowed) notFound();
 
   const isOwner = currentUser?.id === response.userId;
 

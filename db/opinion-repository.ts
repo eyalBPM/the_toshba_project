@@ -194,15 +194,33 @@ export async function findResponseById(id: string): Promise<DbOpinionResponse | 
   return prisma.opinionResponse.findUnique({ where: { id }, select: RESPONSE_SELECT });
 }
 
-export async function updateResponseContent(
+export async function updateResponseFields(
   id: string,
-  content: unknown,
+  data: { content?: unknown; clusterId?: string },
 ): Promise<DbOpinionResponse> {
   return prisma.opinionResponse.update({
     where: { id },
-    data: { content: content as object },
+    data: {
+      ...(data.content !== undefined ? { content: data.content as object } : {}),
+      ...(data.clusterId !== undefined ? { clusterId: data.clusterId } : {}),
+    },
     select: RESPONSE_SELECT,
   });
+}
+
+export async function reassignResponsesBetweenClusters(
+  fromClusterId: string,
+  toClusterId: string,
+): Promise<number> {
+  const result = await prisma.opinionResponse.updateMany({
+    where: { clusterId: fromClusterId },
+    data: { clusterId: toClusterId },
+  });
+  return result.count;
+}
+
+export async function countClustersByUser(userId: string): Promise<number> {
+  return prisma.opinionCluster.count({ where: { ownerUserId: userId } });
 }
 
 export async function deleteResponse(id: string): Promise<void> {

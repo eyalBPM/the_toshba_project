@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { findResponseById } from '@/db/opinion-repository';
 import { getCurrentUser } from '@/lib/auth-utils';
+import { canViewOpinionResponse } from '@/application/opinion/can-view-response';
 import { OpinionEditor } from '@/ui/components/opinion-editor';
 
 export default async function EditOpinionPage({
@@ -18,12 +19,16 @@ export default async function EditOpinionPage({
   if (!currentUser) redirect(`/login?callbackUrl=/articles/${slug}/opinion/${id}/edit`);
   if (currentUser.id !== response.userId) notFound();
 
+  const allowed = await canViewOpinionResponse(response, currentUser.id);
+  if (!allowed) notFound();
+
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
       <h1 className="mb-6 text-xl font-bold">עריכת חוות דעת</h1>
       <OpinionEditor
         responseId={id}
         initialContent={response.content}
+        initialClusterId={response.clusterId}
         deleteRedirectUrl={`/articles/${slug}`}
       />
     </main>

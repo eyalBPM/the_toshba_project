@@ -60,8 +60,19 @@ export function OpinionList({
     }
   }
 
+  // Defensive client-side visibility filter — server already enforces this,
+  // but we re-check in case the server contract regresses. Shared clusters
+  // require an access list the client doesn't have, so we trust the server
+  // for those (it would not have returned the row if access were missing).
+  const visibleResponses = responses.filter((r) => {
+    if (r.cluster.visibility === 'Public') return true;
+    if (currentUserId && r.cluster.ownerUserId === currentUserId) return true;
+    if (r.cluster.visibility === 'Shared') return true;
+    return false;
+  });
+
   // Group responses by cluster
-  const grouped = responses.reduce<Record<string, { title: string; items: OpinionResponseItem[] }>>(
+  const grouped = visibleResponses.reduce<Record<string, { title: string; items: OpinionResponseItem[] }>>(
     (acc, resp) => {
       if (!acc[resp.cluster.id]) {
         acc[resp.cluster.id] = { title: resp.cluster.title, items: [] };
