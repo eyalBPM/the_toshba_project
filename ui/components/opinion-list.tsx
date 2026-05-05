@@ -33,6 +33,7 @@ export function OpinionList({
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -44,16 +45,30 @@ export function OpinionList({
 
   async function handleCreate() {
     setCreating(true);
+    setCreateError(null);
     try {
       const res = await fetch('/api/opinions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ articleId }),
       });
-      if (res.ok) {
-        const json = await res.json();
-        router.push(`/articles/${slug}/opinion/${json.data.responseId}/edit`);
+      const text = await res.text();
+      let json: unknown = null;
+      try { json = text ? JSON.parse(text) : null; } catch { /* not JSON */ }
+      const j = json as { data?: { responseId?: string }; error?: { code?: string; message?: string } } | null;
+      if (res.ok && j?.data?.responseId) {
+        router.push(`/articles/${slug}/opinion/${j.data.responseId}/edit`);
+        return;
       }
+      const serverMsg = j?.error?.message ?? text ?? '(empty body)';
+      const code = j?.error?.code ?? 'NO_CODE';
+      console.error(
+        `[OpinionList] create failed status=${res.status} code=${code} sentArticleId=${articleId} body=${text}`,
+      );
+      setCreateError(`HTTP ${res.status} ${code}: ${serverMsg}`);
+    } catch (err) {
+      console.error('[OpinionList] create threw', err);
+      setCreateError('שגיאת רשת ביצירת חוות דעת');
     } finally {
       setCreating(false);
     }
@@ -133,13 +148,18 @@ export function OpinionList({
           />
 
           {isVerified && (
-            <button
-              onClick={handleCreate}
-              disabled={creating}
-              className="w-full rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-            >
-              {creating ? 'יוצר...' : 'כתוב חוות דעת'}
-            </button>
+            <>
+              <button
+                onClick={handleCreate}
+                disabled={creating}
+                className="w-full rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {creating ? 'יוצר...' : 'כתוב חוות דעת'}
+              </button>
+              {createError && (
+                <p className="text-xs text-red-600">{createError}</p>
+              )}
+            </>
           )}
 
           <div className="max-h-[60vh] space-y-3 overflow-y-auto">

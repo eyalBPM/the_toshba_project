@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
     if (msg === 'UNAUTHORIZED') return ApiErrors.unauthorized();
     if (msg === 'Article not found') return ApiErrors.notFound(msg);
     if (msg.includes('Only verified')) return ApiErrors.forbidden(msg);
+    console.error('[POST /api/opinions] unhandled error:', err);
     return ApiErrors.internal();
   }
 }

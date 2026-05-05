@@ -181,9 +181,9 @@ export async function createResponse(data: {
 }): Promise<DbOpinionResponse> {
   return prisma.opinionResponse.create({
     data: {
-      clusterId: data.clusterId,
-      articleId: data.articleId,
-      userId: data.userId,
+      cluster: { connect: { id: data.clusterId } },
+      article: { connect: { id: data.articleId } },
+      user: { connect: { id: data.userId } },
       content: (data.content ?? {}) as object,
     },
     select: RESPONSE_SELECT,
