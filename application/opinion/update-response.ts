@@ -26,7 +26,7 @@ export async function updateOpinionResponse(
   if (!visible) throw new Error('Response not found');
 
   const guard = canEditResponse(
-    { id: response.id, clusterId: response.clusterId, revisionId: response.revisionId, userId: response.userId },
+    { id: response.id, clusterId: response.clusterId, articleId: response.articleId, userId: response.userId },
     input.user.id,
   );
   if (!guard.success) throw new Error(guard.error);

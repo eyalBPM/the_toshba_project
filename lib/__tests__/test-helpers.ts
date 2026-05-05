@@ -40,7 +40,7 @@ export function makeOpinionResponse(
   return {
     id: 'resp-1',
     clusterId: 'cluster-1',
-    revisionId: 'rev-1',
+    articleId: 'art-1',
     userId: 'user-1',
     ...overrides,
   };

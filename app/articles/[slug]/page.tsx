@@ -133,7 +133,7 @@ export default async function ArticlePage({
             slug={slug}
             currentUserId={currentUser?.id ?? null}
             isVerified={isVerified}
-            currentRevisionId={article.currentRevisionId ?? null}
+            articleId={article.id}
           />
         </aside>
       </div>

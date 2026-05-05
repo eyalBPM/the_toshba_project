@@ -5,7 +5,7 @@ import { apiSuccess, ApiErrors } from '@/lib/api-error';
 import { createOpinionResponse } from '@/application/opinion/create-response';
 
 const createSchema = z.object({
-  revisionId: z.string().min(1),
+  articleId: z.string().min(1),
   clusterId: z.string().optional(),
 });
 
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     const result = await createOpinionResponse({
       user: { id: user.id, status: user.status, role: user.role },
-      revisionId: parsed.data.revisionId,
+      articleId: parsed.data.articleId,
       clusterId: parsed.data.clusterId,
     });
 
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     const msg = err instanceof Error ? err.message : '';
     if (msg === 'UNAUTHORIZED') return ApiErrors.unauthorized();
-    if (msg === 'Revision not found') return ApiErrors.notFound(msg);
+    if (msg === 'Article not found') return ApiErrors.notFound(msg);
     if (msg.includes('Only verified')) return ApiErrors.forbidden(msg);
     return ApiErrors.internal();
   }

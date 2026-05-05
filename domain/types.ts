@@ -50,7 +50,7 @@ export interface DomainCluster {
 export interface DomainOpinionResponse {
   id: string;
   clusterId: string;
-  revisionId: string;
+  articleId: string;
   userId: string;
 }
 

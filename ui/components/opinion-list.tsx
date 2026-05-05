@@ -19,14 +19,14 @@ interface OpinionListProps {
   slug: string;
   currentUserId: string | null;
   isVerified: boolean;
-  currentRevisionId: string | null;
+  articleId: string;
 }
 
 export function OpinionList({
   slug,
   currentUserId,
   isVerified,
-  currentRevisionId,
+  articleId,
 }: OpinionListProps) {
   const router = useRouter();
   const [responses, setResponses] = useState<OpinionResponseItem[]>([]);
@@ -43,13 +43,12 @@ export function OpinionList({
   }, [slug]);
 
   async function handleCreate() {
-    if (!currentRevisionId) return;
     setCreating(true);
     try {
       const res = await fetch('/api/opinions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ revisionId: currentRevisionId }),
+        body: JSON.stringify({ articleId }),
       });
       if (res.ok) {
         const json = await res.json();
@@ -133,7 +132,7 @@ export function OpinionList({
             onChange={(e) => setSearch(e.target.value)}
           />
 
-          {isVerified && currentRevisionId && (
+          {isVerified && (
             <button
               onClick={handleCreate}
               disabled={creating}

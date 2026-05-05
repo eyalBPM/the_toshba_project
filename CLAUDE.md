@@ -511,10 +511,16 @@ The same constraints apply wherever a cluster is deleted (not only this page) an
 
 - id
 - clusterId
-- revisionId
+- articleId
 - userId
 - content
 - createdAt
+
+Rules:
+
+- Opinion responses belong to an **Article**, not to a specific revision. The opinion stays attached to the article as new revisions are approved over time.
+- Creating a response requires an existing Article. There is no opinion-on-a-draft flow — if there is no Article yet (the proposed revision has not been approved), there is nothing to opine on.
+- API: `POST /api/opinions` takes `{ articleId, clusterId? }`. The list endpoint `GET /api/articles/:slug/opinions` returns responses for that article (independent of which revision is current).
 
 Users may express agreement with responses.
 

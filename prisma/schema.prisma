@@ -113,10 +113,11 @@ model Article {
   createdByUserId   String
   createdAt         DateTime @default(now())
 
-  currentRevision ArticleRevision?  @relation("CurrentRevision", fields: [currentRevisionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  snapshot        ArticleSnapshot?  @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
-  createdBy       User              @relation(fields: [createdByUserId], references: [id])
-  revisions       ArticleRevision[] @relation("ArticleRevisions")
+  currentRevision  ArticleRevision?  @relation("CurrentRevision", fields: [currentRevisionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  snapshot         ArticleSnapshot?  @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+  createdBy        User              @relation(fields: [createdByUserId], references: [id])
+  revisions        ArticleRevision[] @relation("ArticleRevisions")
+  opinionResponses OpinionResponse[]
 
   @@index([createdByUserId])
   @@index([createdAt])
@@ -142,7 +143,6 @@ model ArticleRevision {
   agreements          Agreement[]
   images              Image[]
   missingSources      MissingSources[]
-  opinionResponses    OpinionResponse[]
   minorChangeRequests MinorChangeRequest[]
 
   @@index([articleId])
@@ -267,20 +267,20 @@ model OpinionClusterAccess {
 // ─── OpinionResponse ─────────────────────────────────────
 
 model OpinionResponse {
-  id         String   @id @default(cuid())
-  clusterId  String
-  revisionId String
-  userId     String
-  content    Json     @default("{}")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  clusterId String
+  articleId String
+  userId    String
+  content   Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  cluster  OpinionCluster  @relation(fields: [clusterId], references: [id], onDelete: Cascade)
-  revision ArticleRevision @relation(fields: [revisionId], references: [id])
-  user     User            @relation(fields: [userId], references: [id])
+  cluster OpinionCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  article Article        @relation(fields: [articleId], references: [id])
+  user    User           @relation(fields: [userId], references: [id])
 
   @@index([clusterId])
-  @@index([revisionId])
+  @@index([articleId])
   @@index([userId])
 }
 

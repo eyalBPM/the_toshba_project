@@ -16,7 +16,7 @@ export interface DbOpinionCluster {
 export interface DbOpinionResponse {
   id: string;
   clusterId: string;
-  revisionId: string;
+  articleId: string;
   userId: string;
   content: unknown;
   createdAt: Date;
@@ -48,7 +48,7 @@ const CLUSTER_SELECT = {
 const RESPONSE_SELECT = {
   id: true,
   clusterId: true,
-  revisionId: true,
+  articleId: true,
   userId: true,
   content: true,
   createdAt: true,
@@ -175,14 +175,14 @@ export async function hasClusterAccess(
 
 export async function createResponse(data: {
   clusterId: string;
-  revisionId: string;
+  articleId: string;
   userId: string;
   content?: unknown;
 }): Promise<DbOpinionResponse> {
   return prisma.opinionResponse.create({
     data: {
       clusterId: data.clusterId,
-      revisionId: data.revisionId,
+      articleId: data.articleId,
       userId: data.userId,
       content: (data.content ?? {}) as object,
     },
@@ -227,8 +227,8 @@ export async function deleteResponse(id: string): Promise<void> {
   await prisma.opinionResponse.delete({ where: { id } });
 }
 
-export async function listResponsesByRevision(
-  revisionId: string,
+export async function listResponsesByArticle(
+  articleId: string,
   viewerUserId: string | null,
   opts: { cursor?: string; limit?: number } = {},
 ): Promise<DbOpinionResponse[]> {
@@ -250,7 +250,7 @@ export async function listResponsesByRevision(
     : { cluster: { visibility: 'Public' as const } };
 
   return prisma.opinionResponse.findMany({
-    where: { revisionId, ...visibilityFilter },
+    where: { articleId, ...visibilityFilter },
     select: RESPONSE_SELECT,
     orderBy: { createdAt: 'desc' },
     take: limit,

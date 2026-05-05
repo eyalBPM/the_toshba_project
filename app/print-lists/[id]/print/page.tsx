@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth-utils';
 import { findPrintListById } from '@/db/print-list-repository';
 import { prisma } from '@/db/prisma';
-import { listResponsesByRevision } from '@/db/opinion-repository';
+import { listResponsesByArticle } from '@/db/opinion-repository';
 import { PrintListPrintView } from '@/ui/components/print-list-print-view';
 
 interface PrintSettings {
@@ -79,13 +79,10 @@ export default async function PrintListPrintPage({
           select: { content: true },
         });
         content = revision?.content;
+      }
 
-        if (settings.includeClusters) {
-          opinions = await listResponsesByRevision(
-            article.currentRevisionId,
-            currentUser.id,
-          );
-        }
+      if (settings.includeClusters) {
+        opinions = await listResponsesByArticle(article.id, currentUser.id);
       }
 
       return {

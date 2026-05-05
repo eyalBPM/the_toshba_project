@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 import { getCurrentUser } from '@/lib/auth-utils';
 import { apiSuccess, ApiErrors } from '@/lib/api-error';
 import { findArticleBySlug } from '@/db/article-repository';
-import { listResponsesByRevision } from '@/db/opinion-repository';
+import { listResponsesByArticle } from '@/db/opinion-repository';
 import { parsePaginationParams, toPaginated } from '@/lib/pagination';
 
 export async function GET(
@@ -18,10 +18,9 @@ export async function GET(
     ]);
 
     if (!article) return ApiErrors.notFound('Article not found');
-    if (!article.currentRevisionId) return apiSuccess(toPaginated([], limit));
 
-    const responses = await listResponsesByRevision(
-      article.currentRevisionId,
+    const responses = await listResponsesByArticle(
+      article.id,
       currentUser?.id ?? null,
       { cursor, limit },
     );

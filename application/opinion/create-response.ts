@@ -4,14 +4,13 @@ import {
   findDefaultClusterForUser,
   createCluster,
   createResponse as dbCreateResponse,
-  type DbOpinionResponse,
 } from '@/db/opinion-repository';
-import { findRevisionById } from '@/db/revision-repository';
+import { findArticleById } from '@/db/article-repository';
 import { createAuditLog } from '@/db/audit-log-repository';
 
 export interface CreateResponseInput {
   user: DomainUser;
-  revisionId: string;
+  articleId: string;
   clusterId?: string;
 }
 
@@ -27,8 +26,8 @@ export async function createOpinionResponse(
     throw new Error('Only verified users can write responses');
   }
 
-  const revision = await findRevisionById(input.revisionId);
-  if (!revision) throw new Error('Revision not found');
+  const article = await findArticleById(input.articleId);
+  if (!article) throw new Error('Article not found');
 
   let clusterId = input.clusterId;
 
@@ -47,7 +46,7 @@ export async function createOpinionResponse(
 
   const response = await dbCreateResponse({
     clusterId,
-    revisionId: input.revisionId,
+    articleId: input.articleId,
     userId: input.user.id,
   });
 
@@ -56,7 +55,7 @@ export async function createOpinionResponse(
     entityType: 'OpinionResponse',
     entityId: response.id,
     userId: input.user.id,
-    metadata: { clusterId, revisionId: input.revisionId },
+    metadata: { clusterId, articleId: input.articleId },
   });
 
   return { responseId: response.id, clusterId };
