@@ -30,25 +30,22 @@ function deriveSnapshotFromDoc(
   const refsMap = new Map<string, { articleId: string; slug: string; title: string }>();
 
   doc.descendants((node) => {
-    if (!node.isText) return;
-    for (const mark of node.marks) {
-      if (mark.type.name === 'topicMark') {
-        topicsMap.set(mark.attrs.topicId as string, {
-          id: mark.attrs.topicId as string,
-          text: mark.attrs.topicText as string,
-        });
-      } else if (mark.type.name === 'sageMark') {
-        sagesMap.set(mark.attrs.sageId as string, {
-          id: mark.attrs.sageId as string,
-          text: mark.attrs.sageText as string,
-        });
-      } else if (mark.type.name === 'referenceMark') {
-        refsMap.set(mark.attrs.articleId as string, {
-          articleId: mark.attrs.articleId as string,
-          slug: mark.attrs.articleSlug as string,
-          title: mark.attrs.articleTitle as string,
-        });
-      }
+    if (node.type.name === 'topicMark') {
+      topicsMap.set(node.attrs.topicId as string, {
+        id: node.attrs.topicId as string,
+        text: node.attrs.topicText as string,
+      });
+    } else if (node.type.name === 'sageMark') {
+      sagesMap.set(node.attrs.sageId as string, {
+        id: node.attrs.sageId as string,
+        text: node.attrs.sageText as string,
+      });
+    } else if (node.type.name === 'referenceMark') {
+      refsMap.set(node.attrs.articleId as string, {
+        articleId: node.attrs.articleId as string,
+        slug: node.attrs.articleSlug as string,
+        title: node.attrs.articleTitle as string,
+      });
     }
   });
 

@@ -1,4 +1,4 @@
-import { Mark } from '@tiptap/core';
+import { Node } from '@tiptap/core';
 import type { Editor } from '@tiptap/core';
 
 export interface SageAttrs {
@@ -7,76 +7,88 @@ export interface SageAttrs {
 }
 
 /**
- * Inline mark for sage mentions. Styled in green.
- * inclusive: false — typing immediately after a sage mark does not extend it.
+ * Atomic inline node for a sage mention. Cursor cannot be placed inside;
+ * deleting one character removes the whole entity.
  */
-export const SageMarkExtension = Mark.create({
+export const SageMarkExtension = Node.create({
   name: 'sageMark',
+  group: 'inline',
+  inline: true,
+  atom: true,
+  selectable: true,
 
   addAttributes() {
     return {
       sageId: { default: null },
-      sageText: { default: null },
+      sageText: { default: '' },
     };
   },
 
   parseHTML() {
-    return [{ tag: 'span[data-sage-id]' }];
+    return [
+      {
+        tag: 'span[data-sage-id]',
+        getAttrs: (el) => {
+          if (typeof el === 'string') return false;
+          return {
+            sageId: el.getAttribute('data-sage-id'),
+            sageText: el.textContent ?? '',
+          };
+        },
+      },
+    ];
   },
 
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ node, HTMLAttributes }) {
     return [
       'span',
       {
         ...HTMLAttributes,
-        'data-sage-id': HTMLAttributes.sageId,
+        'data-sage-id': node.attrs.sageId,
         class: 'sage-mark inline-block rounded bg-green-100 px-1 text-green-800',
       },
-      0,
+      node.attrs.sageText,
     ];
   },
 
-  inclusive: false,
+  renderText({ node }) {
+    return (node.attrs.sageText as string) ?? '';
+  },
 });
 
-/** Inserts a sage mark at the current cursor position, or wraps selected text. */
+/** Inserts a sage atom node, replacing any selected text with it. */
 export function insertSage(
   editor: Editor,
   sageId: string,
   sageText: string,
   selectedText?: string,
 ) {
-  const { empty } = editor.state.selection;
-  if (!empty && selectedText !== undefined) {
-    editor.chain().focus().setMark('sageMark', { sageId, sageText }).run();
-  } else {
-    editor
-      .chain()
-      .focus()
-      .insertContent({
-        type: 'text',
-        text: sageText,
-        marks: [{ type: 'sageMark', attrs: { sageId, sageText } }],
-      })
-      .run();
+  const { from, to, empty } = editor.state.selection;
+  const display = !empty && selectedText !== undefined ? selectedText : sageText;
+  const chain = editor.chain().focus();
+  if (!empty) {
+    chain.deleteRange({ from, to });
   }
-  editor.chain().unsetMark('sageMark').run();
+  chain
+    .insertContent({
+      type: 'sageMark',
+      attrs: { sageId, sageText: display },
+    })
+    .run();
 }
 
-/** Removes all sageMark marks with the given sageId from the entire document. */
+/** Removes all sage atom nodes with the given sageId from the entire document. */
 export function removeSageMark(editor: Editor, sageId: string) {
   const { doc, tr } = editor.state;
+  const positions: { from: number; to: number }[] = [];
   doc.descendants((node, pos) => {
-    if (!node.isText) return;
-    const sageMarks = node.marks.filter(
-      (m) => m.type.name === 'sageMark' && m.attrs.sageId === sageId,
-    );
-    if (sageMarks.length > 0) {
-      sageMarks.forEach((mark) => {
-        tr.removeMark(pos, pos + node.nodeSize, mark.type);
-      });
+    if (node.type.name === 'sageMark' && node.attrs.sageId === sageId) {
+      positions.push({ from: pos, to: pos + node.nodeSize });
     }
   });
+  for (let i = positions.length - 1; i >= 0; i--) {
+    tr.delete(positions[i].from, positions[i].to);
+  }
   if (tr.docChanged) {
     editor.view.dispatch(tr);
   }

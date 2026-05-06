@@ -1,4 +1,4 @@
-import { Mark } from '@tiptap/core';
+import { Node } from '@tiptap/core';
 import type { Editor } from '@tiptap/core';
 
 export interface TopicAttrs {
@@ -7,39 +7,60 @@ export interface TopicAttrs {
 }
 
 /**
- * Inline mark for topic mentions. Styled in blue.
- * inclusive: false — typing immediately after a topic mark does not extend it.
+ * Atomic inline node for a topic mention. Cursor cannot be placed inside;
+ * deleting one character removes the whole entity.
  */
-export const TopicMarkExtension = Mark.create({
+export const TopicMarkExtension = Node.create({
   name: 'topicMark',
+  group: 'inline',
+  inline: true,
+  atom: true,
+  selectable: true,
 
   addAttributes() {
     return {
       topicId: { default: null },
-      topicText: { default: null },
+      topicText: { default: '' },
     };
   },
 
   parseHTML() {
-    return [{ tag: 'span[data-topic-id]' }];
+    return [
+      {
+        tag: 'span[data-topic-id]',
+        getAttrs: (el) => {
+          if (typeof el === 'string') return false;
+          return {
+            topicId: el.getAttribute('data-topic-id'),
+            topicText: el.textContent ?? '',
+          };
+        },
+      },
+    ];
   },
 
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ node, HTMLAttributes }) {
     return [
       'span',
       {
         ...HTMLAttributes,
-        'data-topic-id': HTMLAttributes.topicId,
+        'data-topic-id': node.attrs.topicId,
         class: 'topic-mark inline-block rounded bg-blue-100 px-1 text-blue-800',
       },
-      0,
+      node.attrs.topicText,
     ];
   },
 
-  inclusive: false,
+  // Make the node's text contribute to editor.getText() / contentLength.
+  renderText({ node }) {
+    return (node.attrs.topicText as string) ?? '';
+  },
 });
 
-/** Inserts a topic mark at the current cursor position, or wraps selected text. */
+/**
+ * Inserts a topic atom node at the current cursor position.
+ * If text is selected, the selection is replaced by the topic node.
+ */
 export function insertTopic(
   editor: Editor,
   topicId: string,
@@ -47,44 +68,32 @@ export function insertTopic(
   selectedText?: string,
 ) {
   const { from, to, empty } = editor.state.selection;
-  if (!empty && selectedText !== undefined) {
-    // Wrap existing selection
-    editor
-      .chain()
-      .focus()
-      .setMark('topicMark', { topicId, topicText })
-      .run();
-  } else {
-    // Insert the topic text with the mark at cursor
-    editor
-      .chain()
-      .focus()
-      .insertContent({
-        type: 'text',
-        text: topicText,
-        marks: [{ type: 'topicMark', attrs: { topicId, topicText } }],
-      })
-      .run();
+  const display = !empty && selectedText !== undefined ? selectedText : topicText;
+  const chain = editor.chain().focus();
+  if (!empty) {
+    chain.deleteRange({ from, to });
   }
-  // Unset mark so subsequent typing is plain
-  editor.chain().unsetMark('topicMark').run();
-  void from; void to;
+  chain
+    .insertContent({
+      type: 'topicMark',
+      attrs: { topicId, topicText: display },
+    })
+    .run();
 }
 
-/** Removes all topicMark marks with the given topicId from the entire document. */
+/** Removes all topic atom nodes with the given topicId from the entire document. */
 export function removeTopicMark(editor: Editor, topicId: string) {
   const { doc, tr } = editor.state;
+  const positions: { from: number; to: number }[] = [];
   doc.descendants((node, pos) => {
-    if (!node.isText) return;
-    const topicMarks = node.marks.filter(
-      (m) => m.type.name === 'topicMark' && m.attrs.topicId === topicId,
-    );
-    if (topicMarks.length > 0) {
-      topicMarks.forEach((mark) => {
-        tr.removeMark(pos, pos + node.nodeSize, mark.type);
-      });
+    if (node.type.name === 'topicMark' && node.attrs.topicId === topicId) {
+      positions.push({ from: pos, to: pos + node.nodeSize });
     }
   });
+  // Walk in reverse so earlier positions stay valid.
+  for (let i = positions.length - 1; i >= 0; i--) {
+    tr.delete(positions[i].from, positions[i].to);
+  }
   if (tr.docChanged) {
     editor.view.dispatch(tr);
   }

@@ -1,4 +1,4 @@
-import { Mark } from '@tiptap/core';
+import { Node } from '@tiptap/core';
 import type { Editor } from '@tiptap/core';
 
 export interface ReferenceAttrs {
@@ -8,64 +8,79 @@ export interface ReferenceAttrs {
 }
 
 /**
- * Inline mark for internal article references (links to other articles).
- * All links in this editor are article references — no external link support.
+ * Atomic inline node for an internal article reference. Cursor cannot be
+ * placed inside; deleting one character removes the whole entity.
  */
-export const ReferenceMarkExtension = Mark.create({
+export const ReferenceMarkExtension = Node.create({
   name: 'referenceMark',
+  group: 'inline',
+  inline: true,
+  atom: true,
+  selectable: true,
 
   addAttributes() {
     return {
       articleId: { default: null },
       articleSlug: { default: null },
-      articleTitle: { default: null },
+      articleTitle: { default: '' },
     };
   },
 
   parseHTML() {
-    return [{ tag: 'a[data-article-id]' }];
+    return [
+      {
+        tag: 'a[data-article-id]',
+        getAttrs: (el) => {
+          if (typeof el === 'string') return false;
+          return {
+            articleId: el.getAttribute('data-article-id'),
+            articleSlug: el.getAttribute('data-article-slug') ?? '',
+            articleTitle: el.textContent ?? '',
+          };
+        },
+      },
+    ];
   },
 
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ node, HTMLAttributes }) {
     return [
       'a',
       {
         ...HTMLAttributes,
-        href: `/articles/${HTMLAttributes.articleSlug}`,
-        'data-article-id': HTMLAttributes.articleId,
+        href: `/articles/${node.attrs.articleSlug}`,
+        'data-article-id': node.attrs.articleId,
+        'data-article-slug': node.attrs.articleSlug,
         class: 'reference-mark text-blue-600 underline cursor-pointer',
       },
-      0,
+      node.attrs.articleTitle,
     ];
   },
 
-  inclusive: false,
+  renderText({ node }) {
+    return (node.attrs.articleTitle as string) ?? '';
+  },
 });
 
-/** Inserts a reference mark at cursor position or wraps selected text. */
+/** Inserts a reference atom node, replacing any selected text with it. */
 export function insertReference(
   editor: Editor,
   article: { id: string; slug: string; title: string },
   selectedText?: string,
 ) {
-  const attrs: ReferenceAttrs = {
-    articleId: article.id,
-    articleSlug: article.slug,
-    articleTitle: article.title,
-  };
-  const { empty } = editor.state.selection;
-  if (!empty && selectedText !== undefined) {
-    editor.chain().focus().setMark('referenceMark', attrs).run();
-  } else {
-    editor
-      .chain()
-      .focus()
-      .insertContent({
-        type: 'text',
-        text: article.title,
-        marks: [{ type: 'referenceMark', attrs }],
-      })
-      .run();
+  const { from, to, empty } = editor.state.selection;
+  const display = !empty && selectedText !== undefined ? selectedText : article.title;
+  const chain = editor.chain().focus();
+  if (!empty) {
+    chain.deleteRange({ from, to });
   }
-  editor.chain().unsetMark('referenceMark').run();
+  chain
+    .insertContent({
+      type: 'referenceMark',
+      attrs: {
+        articleId: article.id,
+        articleSlug: article.slug,
+        articleTitle: display,
+      },
+    })
+    .run();
 }
