@@ -28,6 +28,10 @@ export async function createOpinionResponse(
 
   const article = await findArticleById(input.articleId);
   if (!article) throw new Error('Article not found');
+  if (!article.currentRevisionId) {
+    // Articles only exist after a revision is approved — defensive guard.
+    throw new Error('Article has no current revision');
+  }
 
   let clusterId = input.clusterId;
 
@@ -47,6 +51,7 @@ export async function createOpinionResponse(
   const response = await dbCreateResponse({
     clusterId,
     articleId: input.articleId,
+    savedAtRevisionId: article.currentRevisionId,
     userId: input.user.id,
   });
 

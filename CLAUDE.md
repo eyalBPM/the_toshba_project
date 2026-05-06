@@ -512,7 +512,9 @@ The same constraints apply wherever a cluster is deleted (not only this page) an
 - id
 - clusterId
 - articleId
+- savedAtRevisionId
 - userId
+- published
 - content
 - createdAt
 
@@ -520,7 +522,26 @@ Rules:
 
 - Opinion responses belong to an **Article**, not to a specific revision. The opinion stays attached to the article as new revisions are approved over time.
 - Creating a response requires an existing Article. There is no opinion-on-a-draft flow — if there is no Article yet (the proposed revision has not been approved), there is nothing to opine on.
-- API: `POST /api/opinions` takes `{ articleId, clusterId? }`. The list endpoint `GET /api/articles/:slug/opinions` returns responses for that article (independent of which revision is current).
+- `savedAtRevisionId` is a snapshot of `Article.currentRevisionId` at the time of the most recent save. It is **set on create** and **re-stamped on every successful update** (content edit, cluster reassignment, etc.). It is informational only — used by the UI to flag a response as written for a now-superseded revision.
+- `published` is a boolean draft gate, default `false` on create. The author flips it to `true` via an explicit publish action and may flip it back to `false` at any time.
+- API: `POST /api/opinions` takes `{ articleId, clusterId? }`. The list endpoint `GET /api/articles/:slug/opinions` returns responses for that article (independent of which revision is current). `PATCH /api/opinions/:id` accepts `{ content?, clusterId?, published? }` (at least one required); only the author may PATCH.
+
+Visibility (server-enforced):
+
+- A response with `published = false` is visible **only to its author** (`userId`), regardless of cluster visibility. All other viewers (including cluster owners and Public-cluster visitors) MUST be treated as if the response does not exist (404 / `notFound()`). Applies to every API endpoint and every page that returns or lists responses, including the list endpoint's `where` clause.
+- A response with `published = true` follows the existing cluster-visibility rules.
+
+Edit-mode invariant:
+
+- While a response is being edited (i.e., the user is on the editor page `/articles/[slug]/opinion/[id]/edit`), `published` MUST be `false`. The editor uses **auto-save** (debounced ~1.5s after the last keystroke) and every PATCH it issues includes `published: false` alongside the content. The editor also defensively flips `published` to `false` on mount if it arrives published (for direct URL access that bypassed the view-page Edit button), and flushes any pending auto-save on unmount so navigating back to the view page mid-typing does not lose the last edit.
+- The view-page **Edit** button: if the response is currently `published` AND the cluster's visibility is NOT `Private`, show a confirmation with the exact text **"כאשר אתה עובר למצב עריכה, הדעה הזו תהיה מוסתרת מהקהילה, עד לאחר שתסיים לערוך, תצא ממצב עריכה, ותאשר פרסום"**. On confirm (or when no confirmation is needed), the client first PATCHes `{ published: false }` and then navigates to the editor page.
+- Re-publishing happens only via the view-page **Publish** button (`PATCH { published: true }`). The editor never publishes.
+
+UI policy:
+
+- Owner-only **draft indicator** in the sidebar (`OpinionList` on the article page): each unpublished response card belonging to the current user shows a small yellow badge **"טיוטה — לא פורסם"**. (Non-authors do not see the card at all.)
+- Owner-only **draft banner** on the response view page (`/articles/[slug]/opinion/[id]`): when the viewer is the author and the response is unpublished, render a yellow notice above the content explaining that the response is hidden from the community until published.
+- "Old revision" indicator (independent of publication): wherever an opinion response is displayed (the sidebar AND the view page), if `response.savedAtRevisionId !== article.currentRevisionId`, render a small muted line beneath the response: **"נכתב עבור מהדורה ישנה"** with the words "מהדורה ישנה" linking to `/revisions/[savedAtRevisionId]`. If `article.currentRevisionId` is unknown to the rendering context (e.g., null), the stale indicator is suppressed.
 
 Users may express agreement with responses.
 

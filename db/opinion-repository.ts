@@ -17,7 +17,9 @@ export interface DbOpinionResponse {
   id: string;
   clusterId: string;
   articleId: string;
+  savedAtRevisionId: string;
   userId: string;
+  published: boolean;
   content: unknown;
   createdAt: Date;
   updatedAt: Date;
@@ -49,7 +51,9 @@ const RESPONSE_SELECT = {
   id: true,
   clusterId: true,
   articleId: true,
+  savedAtRevisionId: true,
   userId: true,
+  published: true,
   content: true,
   createdAt: true,
   updatedAt: true,
@@ -176,6 +180,7 @@ export async function hasClusterAccess(
 export async function createResponse(data: {
   clusterId: string;
   articleId: string;
+  savedAtRevisionId: string;
   userId: string;
   content?: unknown;
 }): Promise<DbOpinionResponse> {
@@ -183,6 +188,7 @@ export async function createResponse(data: {
     data: {
       cluster: { connect: { id: data.clusterId } },
       article: { connect: { id: data.articleId } },
+      savedAtRevision: { connect: { id: data.savedAtRevisionId } },
       user: { connect: { id: data.userId } },
       content: (data.content ?? {}) as object,
     },
@@ -196,13 +202,24 @@ export async function findResponseById(id: string): Promise<DbOpinionResponse | 
 
 export async function updateResponseFields(
   id: string,
-  data: { content?: unknown; clusterId?: string },
+  data: {
+    content?: unknown;
+    clusterId?: string;
+    savedAtRevisionId?: string;
+    published?: boolean;
+  },
 ): Promise<DbOpinionResponse> {
   return prisma.opinionResponse.update({
     where: { id },
     data: {
       ...(data.content !== undefined ? { content: data.content as object } : {}),
-      ...(data.clusterId !== undefined ? { clusterId: data.clusterId } : {}),
+      ...(data.clusterId !== undefined
+        ? { cluster: { connect: { id: data.clusterId } } }
+        : {}),
+      ...(data.savedAtRevisionId !== undefined
+        ? { savedAtRevision: { connect: { id: data.savedAtRevisionId } } }
+        : {}),
+      ...(data.published !== undefined ? { published: data.published } : {}),
     },
     select: RESPONSE_SELECT,
   });
@@ -233,8 +250,8 @@ export async function listResponsesByArticle(
   opts: { cursor?: string; limit?: number } = {},
 ): Promise<DbOpinionResponse[]> {
   const limit = opts.limit ?? 50;
-  // Build visibility filter: Public OR owner OR (Shared AND access)
-  const visibilityFilter = viewerUserId
+  // Cluster visibility filter: Public OR cluster-owner OR (Shared AND access)
+  const clusterVisibility = viewerUserId
     ? {
         OR: [
           { cluster: { visibility: 'Public' as const } },
@@ -249,8 +266,14 @@ export async function listResponsesByArticle(
       }
     : { cluster: { visibility: 'Public' as const } };
 
+  // Publication filter: published responses are visible per cluster rules;
+  // unpublished responses are visible only to their author.
+  const publicationFilter = viewerUserId
+    ? { OR: [{ published: true }, { userId: viewerUserId }] }
+    : { published: true };
+
   return prisma.opinionResponse.findMany({
-    where: { articleId, ...visibilityFilter },
+    where: { articleId, AND: [clusterVisibility, publicationFilter] },
     select: RESPONSE_SELECT,
     orderBy: { createdAt: 'desc' },
     take: limit,

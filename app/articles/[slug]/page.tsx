@@ -134,6 +134,7 @@ export default async function ArticlePage({
             currentUserId={currentUser?.id ?? null}
             isVerified={isVerified}
             articleId={article.id}
+            articleCurrentRevisionId={article.currentRevisionId ?? null}
           />
         </aside>
       </div>

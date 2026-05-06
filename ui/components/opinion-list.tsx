@@ -11,6 +11,8 @@ interface OpinionResponseItem {
   content: unknown;
   createdAt: string;
   updatedAt: string;
+  savedAtRevisionId: string;
+  published: boolean;
   user: { id: string; name: string };
   cluster: { id: string; title: string; visibility: string; ownerUserId: string };
 }
@@ -20,6 +22,7 @@ interface OpinionListProps {
   currentUserId: string | null;
   isVerified: boolean;
   articleId: string;
+  articleCurrentRevisionId: string | null;
 }
 
 export function OpinionList({
@@ -27,6 +30,7 @@ export function OpinionList({
   currentUserId,
   isVerified,
   articleId,
+  articleCurrentRevisionId,
 }: OpinionListProps) {
   const router = useRouter();
   const [responses, setResponses] = useState<OpinionResponseItem[]>([]);
@@ -79,6 +83,8 @@ export function OpinionList({
   // require an access list the client doesn't have, so we trust the server
   // for those (it would not have returned the row if access were missing).
   const visibleResponses = responses.filter((r) => {
+    // Unpublished responses are visible only to their author.
+    if (!r.published && currentUserId !== r.userId) return false;
     if (r.cluster.visibility === 'Public') return true;
     if (currentUserId && r.cluster.ownerUserId === currentUserId) return true;
     if (r.cluster.visibility === 'Shared') return true;
@@ -172,21 +178,45 @@ export function OpinionList({
             {Object.entries(filteredGroups).map(([clusterId, group]: [string, GroupedCluster]) => (
               <div key={clusterId} className="space-y-1">
                 <p className="text-xs font-medium text-gray-500">{group.title}</p>
-                {group.items.map((resp) => (
-                  <Link
-                    key={resp.id}
-                    href={`/articles/${slug}/opinion/${resp.id}`}
-                    className="block rounded-md border border-gray-200 bg-white p-2 hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>{resp.user.name}</span>
-                      <span>{new Date(resp.createdAt).toLocaleDateString('he-IL')}</span>
+                {group.items.map((resp) => {
+                  const isStale =
+                    articleCurrentRevisionId !== null &&
+                    resp.savedAtRevisionId !== articleCurrentRevisionId;
+                  const isOwnedDraft =
+                    !resp.published && currentUserId === resp.userId;
+                  return (
+                    <div key={resp.id} className="space-y-0.5">
+                      <Link
+                        href={`/articles/${slug}/opinion/${resp.id}`}
+                        className="block rounded-md border border-gray-200 bg-white p-2 hover:bg-gray-50"
+                      >
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                          <span>{resp.user.name}</span>
+                          <span>{new Date(resp.createdAt).toLocaleDateString('he-IL')}</span>
+                        </div>
+                        {isOwnedDraft && (
+                          <span className="mt-1 inline-block rounded bg-yellow-100 px-1.5 py-0.5 text-[10px] font-medium text-yellow-800">
+                            טיוטה — לא פורסם
+                          </span>
+                        )}
+                        <p className="mt-1 text-sm text-gray-700 line-clamp-2">
+                          {getContentPreview(resp.content) || 'חוות דעת ריקה'}
+                        </p>
+                      </Link>
+                      {isStale && (
+                        <p className="px-2 text-[11px] text-gray-400">
+                          נכתב עבור{' '}
+                          <Link
+                            href={`/revisions/${resp.savedAtRevisionId}`}
+                            className="underline hover:text-gray-600"
+                          >
+                            מהדורה ישנה
+                          </Link>
+                        </p>
+                      )}
                     </div>
-                    <p className="mt-1 text-sm text-gray-700 line-clamp-2">
-                      {getContentPreview(resp.content) || 'חוות דעת ריקה'}
-                    </p>
-                  </Link>
-                ))}
+                  );
+                })}
               </div>
             ))}
           </div>

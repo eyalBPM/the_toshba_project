@@ -6,6 +6,7 @@ import {
   updateResponseFields,
   type DbOpinionResponse,
 } from '@/db/opinion-repository';
+import { findArticleById } from '@/db/article-repository';
 import { canViewOpinionResponse } from './can-view-response';
 import { createAuditLog } from '@/db/audit-log-repository';
 
@@ -14,6 +15,7 @@ export interface UpdateResponseInput {
   responseId: string;
   content?: unknown;
   clusterId?: string;
+  published?: boolean;
 }
 
 export async function updateOpinionResponse(
@@ -39,9 +41,19 @@ export async function updateOpinionResponse(
     }
   }
 
+  // Re-stamp savedAtRevisionId on every save so the UI can flag responses
+  // written for a now-superseded revision.
+  const article = await findArticleById(response.articleId);
+  if (!article) throw new Error('Article not found');
+  if (!article.currentRevisionId) {
+    throw new Error('Article has no current revision');
+  }
+
   const updated = await updateResponseFields(input.responseId, {
     content: input.content,
     clusterId: input.clusterId,
+    savedAtRevisionId: article.currentRevisionId,
+    published: input.published,
   });
 
   await createAuditLog({

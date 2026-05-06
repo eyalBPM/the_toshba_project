@@ -140,10 +140,11 @@ model ArticleRevision {
   currentOfArticle    Article?             @relation("CurrentRevision")
   snapshot            ArticleSnapshot      @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
   createdBy           User                 @relation(fields: [createdByUserId], references: [id])
-  agreements          Agreement[]
-  images              Image[]
-  missingSources      MissingSources[]
-  minorChangeRequests MinorChangeRequest[]
+  agreements           Agreement[]
+  images               Image[]
+  missingSources       MissingSources[]
+  minorChangeRequests  MinorChangeRequest[]
+  savedOpinionResponses OpinionResponse[]   @relation("OpinionResponseSavedAt")
 
   @@index([articleId])
   @@index([status])
@@ -267,20 +268,30 @@ model OpinionClusterAccess {
 // ─── OpinionResponse ─────────────────────────────────────
 
 model OpinionResponse {
-  id        String   @id @default(cuid())
-  clusterId String
-  articleId String
-  userId    String
-  content   Json     @default("{}")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String   @id @default(cuid())
+  clusterId         String
+  articleId         String
+  // Snapshot of Article.currentRevisionId at the time the response was last
+  // saved. Informational only — used by the UI to flag a response as written
+  // for a now-superseded revision. Updated on every save (create/edit).
+  savedAtRevisionId String
+  userId            String
+  // false = draft, hidden from everyone except the author. Default for new
+  // responses. Author flips to true via an explicit publish action; entering
+  // edit mode auto-flips back to false. Server enforces visibility.
+  published         Boolean  @default(false)
+  content           Json     @default("{}")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  cluster OpinionCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
-  article Article        @relation(fields: [articleId], references: [id])
-  user    User           @relation(fields: [userId], references: [id])
+  cluster         OpinionCluster  @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  article         Article         @relation(fields: [articleId], references: [id])
+  savedAtRevision ArticleRevision @relation("OpinionResponseSavedAt", fields: [savedAtRevisionId], references: [id])
+  user            User            @relation(fields: [userId], references: [id])
 
   @@index([clusterId])
   @@index([articleId])
+  @@index([savedAtRevisionId])
   @@index([userId])
 }
 

@@ -11,10 +11,15 @@ const updateSchema = z
   .object({
     content: z.unknown().optional(),
     clusterId: z.string().min(1).optional(),
+    published: z.boolean().optional(),
   })
-  .refine((v) => v.content !== undefined || v.clusterId !== undefined, {
-    message: 'At least one of content or clusterId is required',
-  });
+  .refine(
+    (v) =>
+      v.content !== undefined ||
+      v.clusterId !== undefined ||
+      v.published !== undefined,
+    { message: 'At least one of content, clusterId, or published is required' },
+  );
 
 export async function GET(
   _request: Request,
@@ -57,6 +62,7 @@ export async function PATCH(
       responseId: id,
       content: parsed.data.content,
       clusterId: parsed.data.clusterId,
+      published: parsed.data.published,
     });
 
     return apiSuccess(updated);

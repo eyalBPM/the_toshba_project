@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
+import Link from 'next/link';
 import { findResponseById } from '@/db/opinion-repository';
 import { getCurrentUser } from '@/lib/auth-utils';
 import { canViewOpinionResponse } from '@/application/opinion/can-view-response';
@@ -24,11 +25,20 @@ export default async function EditOpinionPage({
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-6 text-xl font-bold">עריכת חוות דעת</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-xl font-bold">עריכת חוות דעת</h1>
+        <Link
+          href={`/articles/${slug}/opinion/${id}`}
+          className="text-sm text-blue-600 hover:underline"
+        >
+          חזרה לצפייה
+        </Link>
+      </div>
       <OpinionEditor
         responseId={id}
         initialContent={response.content}
         initialClusterId={response.clusterId}
+        initialPublished={response.published}
         deleteRedirectUrl={`/articles/${slug}`}
       />
     </main>

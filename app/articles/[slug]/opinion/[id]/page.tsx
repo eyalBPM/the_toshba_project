@@ -1,9 +1,11 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { findResponseById } from '@/db/opinion-repository';
+import { findArticleById } from '@/db/article-repository';
 import { getCurrentUser } from '@/lib/auth-utils';
 import { canViewOpinionResponse } from '@/application/opinion/can-view-response';
 import { ContentRenderer } from '@/ui/components/content-renderer';
+import { OpinionViewActions } from '@/ui/components/opinion-view-actions';
 
 export default async function OpinionViewPage({
   params,
@@ -20,6 +22,11 @@ export default async function OpinionViewPage({
 
   const allowed = await canViewOpinionResponse(response, currentUser?.id ?? null);
   if (!allowed) notFound();
+
+  const article = await findArticleById(response.articleId);
+  const isStale =
+    !!article?.currentRevisionId &&
+    response.savedAtRevisionId !== article.currentRevisionId;
 
   const isOwner = currentUser?.id === response.userId;
 
@@ -41,19 +48,40 @@ export default async function OpinionViewPage({
             חזרה לערך
           </Link>
           {isOwner && (
-            <Link
-              href={`/articles/${slug}/opinion/${id}/edit`}
-              className="rounded-md bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
-            >
-              ערוך
-            </Link>
+            <OpinionViewActions
+              responseId={id}
+              editHref={`/articles/${slug}/opinion/${id}/edit`}
+              initialPublished={response.published}
+              clusterVisibility={
+                response.cluster.visibility as 'Private' | 'Shared' | 'Public'
+              }
+            />
           )}
         </div>
       </div>
 
+      {isOwner && !response.published && (
+        <div className="mb-3 rounded-md border border-yellow-300 bg-yellow-50 px-3 py-2 text-sm text-yellow-800">
+          טיוטה — חוות הדעת עדיין לא פורסמה ורק את/ה רואה אותה. כדי שהקהילה תראה
+          אותה, לחץ/י על &quot;פרסם&quot;.
+        </div>
+      )}
+
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <ContentRenderer content={response.content} />
       </div>
+
+      {isStale && (
+        <p className="mt-3 text-xs text-gray-400">
+          נכתב עבור{' '}
+          <Link
+            href={`/revisions/${response.savedAtRevisionId}`}
+            className="underline hover:text-gray-600"
+          >
+            מהדורה ישנה
+          </Link>
+        </p>
+      )}
     </main>
   );
 }
