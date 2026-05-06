@@ -7,6 +7,9 @@ const NAV_ITEMS = [
   { href: '/admin/revisions', label: 'גרסאות' },
   { href: '/admin/minor-changes', label: 'שינויים מינוריים' },
   { href: '/admin/images', label: 'תמונות' },
+  { href: '/admin/missing-sources', label: 'מקורות מבוקשים' },
+  { href: '/admin/topics', label: 'נושאים' },
+  { href: '/admin/sages', label: 'חכמים' },
   { href: '/admin/users', label: 'משתמשים' },
 ];
 
@@ -16,7 +19,10 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const user = await getCurrentUser();
-  if (!user || (user.role !== 'Admin' && user.role !== 'Senior')) {
+  if (
+    !user ||
+    (user.role !== 'Admin' && user.role !== 'Senior' && user.role !== 'Moderator')
+  ) {
     redirect('/');
   }
 

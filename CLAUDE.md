@@ -286,7 +286,7 @@ Rules:
 
 ## Sources
 
-A predefined reference table (loaded via script, not user-created).
+A predefined reference table (loaded via a secret-protected admin endpoint, not user-created).
 
 Fields:
 
@@ -295,6 +295,15 @@ Fields:
 - label
 - path (Sefaria API path)
 - index (for sorting)
+
+### Loader endpoint
+
+`POST /api/sources` is the **only** write surface for the `Source` table — there is no user-facing UI for creating, editing, or deleting sources.
+
+- **Auth:** `Authorization: Bearer <secret>` header. The secret is read from `process.env.SOURCES_ADMIN_SECRET`. Missing/incorrect token → 401. Missing env var → 500.
+- **Body:** `{ sources: [{ id?, book, label, path, index }, ...] }` (Zod-validated). `id` is optional; supplying it allows idempotent re-runs (re-inserting the same `id` is silently skipped via `createMany skipDuplicates: true`). When omitted, a fresh cuid is generated and re-runs will create duplicates — callers that want idempotency MUST supply stable ids.
+- **Response:** `{ inserted: number }` with HTTP 201.
+- **Cache:** on success, the handler invalidates the `sources` cache tag so subsequent reads see the new rows.
 
 Trigger: UI button or Shift+2. Searchable select shows sources by label.
 
