@@ -6,6 +6,7 @@ import { insertSourceCitation, getCitationList } from '@/ui/extensions/source-ci
 import type { DbSourceItem } from '@/ui/hooks/use-sources';
 import type { SnapshotTag } from '@/ui/hooks/use-editor-state';
 import { useListNavigation } from '@/ui/hooks/use-list-navigation';
+import { normalizeHebrewPunctuation } from '@/lib/hebrew-punctuation';
 
 interface SourcesPanelProps {
   editor: Editor;
@@ -38,11 +39,13 @@ export function SourcesPanel({
     return () => document.removeEventListener('mousedown', handler);
   }, [onClose]);
 
-  const filtered = query.trim()
-    ? sources.filter((s) =>
-        s.label.toLowerCase().includes(query.toLowerCase()) ||
-        s.book.toLowerCase().includes(query.toLowerCase()),
-      )
+  const normalizedQuery = normalizeHebrewPunctuation(query.trim().toLowerCase());
+  const filtered = normalizedQuery
+    ? sources.filter((s) => {
+        const label = normalizeHebrewPunctuation(s.label.toLowerCase());
+        const book = normalizeHebrewPunctuation(s.book.toLowerCase());
+        return label.includes(normalizedQuery) || book.includes(normalizedQuery);
+      })
     : sources;
 
   const visible = filtered.slice(0, 50);
