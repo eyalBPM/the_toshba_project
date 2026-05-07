@@ -5,6 +5,7 @@ import type { Editor } from '@tiptap/core';
 import { insertSage } from '@/ui/extensions/sage-mark';
 import { useSagesSearch } from '@/ui/hooks/use-sages-search';
 import type { SnapshotTag } from '@/ui/hooks/use-editor-state';
+import { useListNavigation } from '@/ui/hooks/use-list-navigation';
 
 interface SagesPanelProps {
   editor: Editor;
@@ -16,6 +17,7 @@ export function SagesPanel({ editor, onClose }: SagesPanelProps) {
   const { results, loading } = useSagesSearch(query);
   const [creating, setCreating] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const nav = useListNavigation(results.length);
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -72,8 +74,19 @@ export function SagesPanel({ editor, onClose }: SagesPanelProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') handleCreate();
-            if (e.key === 'Escape') onClose();
+            if (e.key === 'Escape') {
+              onClose();
+              return;
+            }
+            if (nav.handleKeyDown(e)) return;
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              if (results.length > 0 && results[nav.activeIndex]) {
+                handleSelect(results[nav.activeIndex]);
+              } else {
+                handleCreate();
+              }
+            }
           }}
         />
       </div>
@@ -82,11 +95,15 @@ export function SagesPanel({ editor, onClose }: SagesPanelProps) {
         {loading && (
           <p className="px-3 py-2 text-xs text-gray-400">מחפש...</p>
         )}
-        {results.map((sage) => (
+        {results.map((sage, index) => (
           <button
             key={sage.id}
+            ref={nav.setItemRef(index)}
             type="button"
-            className="w-full px-3 py-1.5 text-right text-sm text-gray-700 hover:bg-gray-50"
+            className={`w-full px-3 py-1.5 text-right text-sm text-gray-700 ${
+              index === nav.activeIndex ? 'bg-green-50' : 'hover:bg-gray-50'
+            }`}
+            onMouseEnter={() => nav.setActiveIndex(index)}
             onClick={() => handleSelect(sage)}
           >
             {sage.text}

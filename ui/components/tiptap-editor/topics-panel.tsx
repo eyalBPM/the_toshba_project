@@ -5,6 +5,7 @@ import type { Editor } from '@tiptap/core';
 import { insertTopic } from '@/ui/extensions/topic-mark';
 import { useTopicsSearch } from '@/ui/hooks/use-topics-search';
 import type { SnapshotTag } from '@/ui/hooks/use-editor-state';
+import { useListNavigation } from '@/ui/hooks/use-list-navigation';
 
 interface TopicsPanelProps {
   editor: Editor;
@@ -17,6 +18,7 @@ export function TopicsPanel({ editor, onAbstractAdd, onClose }: TopicsPanelProps
   const { results, loading } = useTopicsSearch(query);
   const [creating, setCreating] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const nav = useListNavigation(results.length);
 
   // Close on outside click
   useEffect(() => {
@@ -98,8 +100,19 @@ export function TopicsPanel({ editor, onAbstractAdd, onClose }: TopicsPanelProps
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') handleCreate();
-            if (e.key === 'Escape') onClose();
+            if (e.key === 'Escape') {
+              onClose();
+              return;
+            }
+            if (nav.handleKeyDown(e)) return;
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              if (results.length > 0 && results[nav.activeIndex]) {
+                handleSelect(results[nav.activeIndex]);
+              } else {
+                handleCreate();
+              }
+            }
           }}
         />
       </div>
@@ -108,10 +121,14 @@ export function TopicsPanel({ editor, onAbstractAdd, onClose }: TopicsPanelProps
         {loading && (
           <p className="px-3 py-2 text-xs text-gray-400">מחפש...</p>
         )}
-        {results.map((topic) => (
+        {results.map((topic, index) => (
           <div
             key={topic.id}
-            className="flex items-center justify-between gap-1 px-3 py-1.5 hover:bg-gray-50"
+            ref={nav.setItemRef(index)}
+            className={`flex items-center justify-between gap-1 px-3 py-1.5 ${
+              index === nav.activeIndex ? 'bg-blue-50' : 'hover:bg-gray-50'
+            }`}
+            onMouseEnter={() => nav.setActiveIndex(index)}
           >
             <button
               type="button"

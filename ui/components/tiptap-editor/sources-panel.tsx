@@ -5,6 +5,7 @@ import type { Editor } from '@tiptap/core';
 import { insertSourceCitation, getCitationList } from '@/ui/extensions/source-citation';
 import type { DbSourceItem } from '@/ui/hooks/use-sources';
 import type { SnapshotTag } from '@/ui/hooks/use-editor-state';
+import { useListNavigation } from '@/ui/hooks/use-list-navigation';
 
 interface SourcesPanelProps {
   editor: Editor;
@@ -43,6 +44,9 @@ export function SourcesPanel({
         s.book.toLowerCase().includes(query.toLowerCase()),
       )
     : sources;
+
+  const visible = filtered.slice(0, 50);
+  const nav = useListNavigation(visible.length);
 
   function handleSelect(source: DbSourceItem) {
     insertSourceCitation(editor, source.id);
@@ -99,16 +103,28 @@ export function SourcesPanel({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Escape') onClose();
+                if (e.key === 'Escape') {
+                  onClose();
+                  return;
+                }
+                if (nav.handleKeyDown(e)) return;
+                if (e.key === 'Enter' && visible[nav.activeIndex]) {
+                  e.preventDefault();
+                  handleSelect(visible[nav.activeIndex]);
+                }
               }}
             />
           </div>
 
           <div className="max-h-56 overflow-y-auto">
-            {filtered.slice(0, 50).map((source) => (
+            {visible.map((source, index) => (
               <div
                 key={source.id}
-                className="flex items-center justify-between gap-1 px-3 py-1.5 hover:bg-gray-50"
+                ref={nav.setItemRef(index)}
+                className={`flex items-center justify-between gap-1 px-3 py-1.5 ${
+                  index === nav.activeIndex ? 'bg-amber-50' : 'hover:bg-gray-50'
+                }`}
+                onMouseEnter={() => nav.setActiveIndex(index)}
               >
                 <button
                   type="button"

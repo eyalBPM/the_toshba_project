@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { Editor } from '@tiptap/core';
 import { insertReference } from '@/ui/extensions/reference-mark';
 import { useArticlesSearch } from '@/ui/hooks/use-articles-search';
+import { useListNavigation } from '@/ui/hooks/use-list-navigation';
 
 interface ReferencesPanelProps {
   editor: Editor;
@@ -14,6 +15,7 @@ export function ReferencesPanel({ editor, onClose }: ReferencesPanelProps) {
   const [query, setQuery] = useState('');
   const { results, loading } = useArticlesSearch(query);
   const panelRef = useRef<HTMLDivElement>(null);
+  const nav = useListNavigation(results.length);
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -29,6 +31,11 @@ export function ReferencesPanel({ editor, onClose }: ReferencesPanelProps) {
   const selectedText = empty
     ? undefined
     : editor.state.doc.textBetween(from, to);
+
+  function handleSelect(article: (typeof results)[number]) {
+    insertReference(editor, article, selectedText);
+    onClose();
+  }
 
   return (
     <div
@@ -48,7 +55,15 @@ export function ReferencesPanel({ editor, onClose }: ReferencesPanelProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Escape') onClose();
+            if (e.key === 'Escape') {
+              onClose();
+              return;
+            }
+            if (nav.handleKeyDown(e)) return;
+            if (e.key === 'Enter' && results[nav.activeIndex]) {
+              e.preventDefault();
+              handleSelect(results[nav.activeIndex]);
+            }
           }}
         />
       </div>
@@ -57,15 +72,16 @@ export function ReferencesPanel({ editor, onClose }: ReferencesPanelProps) {
         {loading && (
           <p className="px-3 py-2 text-xs text-gray-400">מחפש...</p>
         )}
-        {results.map((article) => (
+        {results.map((article, index) => (
           <button
             key={article.id}
+            ref={nav.setItemRef(index)}
             type="button"
-            className="w-full px-3 py-2 text-right text-sm text-gray-700 hover:bg-blue-50"
-            onClick={() => {
-              insertReference(editor, article, selectedText);
-              onClose();
-            }}
+            className={`w-full px-3 py-2 text-right text-sm text-gray-700 ${
+              index === nav.activeIndex ? 'bg-blue-100' : 'hover:bg-blue-50'
+            }`}
+            onMouseEnter={() => nav.setActiveIndex(index)}
+            onClick={() => handleSelect(article)}
           >
             {article.title}
           </button>
