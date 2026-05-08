@@ -1,6 +1,7 @@
 'use client';
 
 import type { Editor } from '@tiptap/core';
+import { insertTable } from '@/ui/extensions/table';
 
 interface EditorToolbarProps {
   editor: Editor | null;
@@ -42,6 +43,11 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onClick: () => (editor as any).emit('openSagesPanel', {}),
     },
+    {
+      label: 'טבלה',
+      title: 'הוסף טבלה (Shift+6)',
+      onClick: () => insertTable(editor),
+    },
   ];
 
   const formatButtons: ToolbarButton[] = [
@@ -56,6 +62,40 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
       title: 'נטוי',
       onClick: () => editor.chain().focus().toggleItalic().run(),
       active: editor.isActive('italic'),
+    },
+  ];
+
+  const inTable = editor.isActive('table');
+  const tableButtons: ToolbarButton[] = [
+    {
+      label: '+ שורה',
+      title: 'הוסף שורה מתחת',
+      onClick: () => editor.chain().focus().addRowAfter().run(),
+    },
+    {
+      label: '+ עמודה',
+      title: 'הוסף עמודה משמאל',
+      onClick: () => editor.chain().focus().addColumnAfter().run(),
+    },
+    {
+      label: '− שורה',
+      title: 'מחק שורה',
+      onClick: () => editor.chain().focus().deleteRow().run(),
+    },
+    {
+      label: '− עמודה',
+      title: 'מחק עמודה',
+      onClick: () => editor.chain().focus().deleteColumn().run(),
+    },
+    {
+      label: 'מזג',
+      title: 'מזג / פצל תאים',
+      onClick: () => editor.chain().focus().mergeOrSplit().run(),
+    },
+    {
+      label: 'מחק טבלה',
+      title: 'מחק את הטבלה',
+      onClick: () => editor.chain().focus().deleteTable().run(),
     },
   ];
 
@@ -88,6 +128,22 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
           {btn.label}
         </button>
       ))}
+      {inTable && (
+        <>
+          <span className="mx-1 h-4 w-px bg-gray-300" />
+          {tableButtons.map((btn) => (
+            <button
+              key={btn.label}
+              type="button"
+              title={btn.title}
+              onClick={btn.onClick}
+              className="rounded px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-amber-100 hover:text-amber-800 transition-colors"
+            >
+              {btn.label}
+            </button>
+          ))}
+        </>
+      )}
     </div>
   );
 }

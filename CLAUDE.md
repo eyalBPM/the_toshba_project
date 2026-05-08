@@ -379,6 +379,7 @@ While writing content, user can insert:
 - Topics using Shift+3 or UI button → combobox, inserts inline or abstract
 - References using Shift+4 or UI button → searchable select of articles, inserts link
 - Sages using Shift+5 or UI button → combobox, inserts inline
+- Tables using Shift+6 or UI button → inserts a default 3×3 table with a header row at the cursor
 
 System must support:
 
@@ -388,6 +389,17 @@ System must support:
 - Wikipedia-style `[n]` footnotes for sources with footer
 - Sefaria API tooltip on source hover
 - "Missing Source" for uncatalogued references
+
+## Tables
+
+Tables are stored as standard TipTap table nodes inside the content JSON (no separate DB table, no snapshot tracking).
+
+Behavior:
+- Insert via toolbar "טבלה" button or Shift+6. Default size: 3 rows × 3 columns, with a header row.
+- Columns are resizable by dragging the column edge.
+- When the cursor is inside a table, the toolbar exposes a contextual table sub-toolbar with: add row, add column, delete row, delete column, merge/split cells, delete table.
+- Tables render right-to-left (Hebrew); cell text alignment defaults to right.
+- The read-only `ContentRenderer` registers the same table extensions so saved tables display identically in article view, opinion view, and any other read-only surface.
 
 ---
 

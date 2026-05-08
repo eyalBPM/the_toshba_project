@@ -7,6 +7,7 @@ import { TopicMarkExtension } from '@/ui/extensions/topic-mark';
 import { SageMarkExtension } from '@/ui/extensions/sage-mark';
 import { ReferenceMarkExtension } from '@/ui/extensions/reference-mark';
 import { ImageNodeExtension } from '@/ui/extensions/image-node';
+import { TableExtensions } from '@/ui/extensions/table';
 import { useSources } from '@/ui/hooks/use-sources';
 import { SourceFooter } from './tiptap-editor/source-footer';
 
@@ -30,6 +31,7 @@ export function ContentRenderer({ content, className = '' }: ContentRendererProp
       SageMarkExtension,
       ReferenceMarkExtension,
       ImageNodeExtension,
+      ...TableExtensions,
     ],
     content: (content as object | null) ?? {},
     editable: false,

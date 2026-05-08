@@ -10,6 +10,7 @@ import { SageMarkExtension } from '@/ui/extensions/sage-mark';
 import { ReferenceMarkExtension } from '@/ui/extensions/reference-mark';
 import { KeyboardTriggersExtension } from '@/ui/extensions/keyboard-triggers';
 import { ImageNodeExtension } from '@/ui/extensions/image-node';
+import { TableExtensions } from '@/ui/extensions/table';
 import { ImageUploadButton } from './tiptap-editor/image-upload-button';
 import { useEditorState } from '@/ui/hooks/use-editor-state';
 import type { SnapshotTag } from '@/ui/hooks/use-editor-state';
@@ -92,6 +93,7 @@ export function RevisionEditor({
       ReferenceMarkExtension,
       KeyboardTriggersExtension,
       ImageNodeExtension,
+      ...TableExtensions,
     ],
     content: (effectiveContent as object) ?? {},
     editable,
