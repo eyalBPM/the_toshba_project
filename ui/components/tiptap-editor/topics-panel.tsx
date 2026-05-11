@@ -6,6 +6,7 @@ import { insertTopic } from '@/ui/extensions/topic-mark';
 import { useTopicsSearch } from '@/ui/hooks/use-topics-search';
 import type { SnapshotTag } from '@/ui/hooks/use-editor-state';
 import { useListNavigation } from '@/ui/hooks/use-list-navigation';
+import { completePrefix } from '@/lib/complete-prefix';
 
 interface TopicsPanelProps {
   editor: Editor;
@@ -18,7 +19,7 @@ export function TopicsPanel({ editor, onAbstractAdd, onClose }: TopicsPanelProps
   const { results, loading } = useTopicsSearch(query);
   const [creating, setCreating] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
-  const nav = useListNavigation(results.length);
+  const nav = useListNavigation(results, (t) => t.id);
 
   // Close on outside click
   useEffect(() => {
@@ -105,10 +106,24 @@ export function TopicsPanel({ editor, onAbstractAdd, onClose }: TopicsPanelProps
               return;
             }
             if (nav.handleKeyDown(e)) return;
+            if (e.key === 'ArrowLeft' && nav.activeItem) {
+              const input = e.currentTarget;
+              if (
+                input.selectionStart === input.value.length &&
+                input.selectionEnd === input.value.length
+              ) {
+                const next = completePrefix(query, nav.activeItem.text);
+                if (next !== null) {
+                  e.preventDefault();
+                  setQuery(next);
+                }
+              }
+              return;
+            }
             if (e.key === 'Enter') {
               e.preventDefault();
-              if (results.length > 0 && results[nav.activeIndex]) {
-                handleSelect(results[nav.activeIndex]);
+              if (nav.activeItem) {
+                handleSelect(nav.activeItem);
               } else {
                 handleCreate();
               }
@@ -124,7 +139,7 @@ export function TopicsPanel({ editor, onAbstractAdd, onClose }: TopicsPanelProps
         {results.map((topic, index) => (
           <div
             key={topic.id}
-            ref={nav.setItemRef(index)}
+            ref={nav.setItemRef(topic.id)}
             className={`flex items-center justify-between gap-1 px-3 py-1.5 ${
               index === nav.activeIndex ? 'bg-blue-50' : 'hover:bg-gray-50'
             }`}

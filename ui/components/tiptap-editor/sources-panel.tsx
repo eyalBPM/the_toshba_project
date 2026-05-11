@@ -7,6 +7,7 @@ import type { DbSourceItem } from '@/ui/hooks/use-sources';
 import type { SnapshotTag } from '@/ui/hooks/use-editor-state';
 import { useListNavigation } from '@/ui/hooks/use-list-navigation';
 import { normalizeHebrewPunctuation } from '@/lib/hebrew-punctuation';
+import { completePrefix } from '@/lib/complete-prefix';
 
 interface SourcesPanelProps {
   editor: Editor;
@@ -49,7 +50,7 @@ export function SourcesPanel({
     : sources;
 
   const visible = filtered.slice(0, 50);
-  const nav = useListNavigation(visible.length);
+  const nav = useListNavigation(visible, (s) => s.id);
 
   function handleSelect(source: DbSourceItem) {
     insertSourceCitation(editor, source.id);
@@ -111,9 +112,23 @@ export function SourcesPanel({
                   return;
                 }
                 if (nav.handleKeyDown(e)) return;
-                if (e.key === 'Enter' && visible[nav.activeIndex]) {
+                if (e.key === 'ArrowLeft' && nav.activeItem) {
+                  const input = e.currentTarget;
+                  if (
+                    input.selectionStart === input.value.length &&
+                    input.selectionEnd === input.value.length
+                  ) {
+                    const next = completePrefix(query, nav.activeItem.label);
+                    if (next !== null) {
+                      e.preventDefault();
+                      setQuery(next);
+                    }
+                  }
+                  return;
+                }
+                if (e.key === 'Enter' && nav.activeItem) {
                   e.preventDefault();
-                  handleSelect(visible[nav.activeIndex]);
+                  handleSelect(nav.activeItem);
                 }
               }}
             />
@@ -123,7 +138,7 @@ export function SourcesPanel({
             {visible.map((source, index) => (
               <div
                 key={source.id}
-                ref={nav.setItemRef(index)}
+                ref={nav.setItemRef(source.id)}
                 className={`flex items-center justify-between gap-1 px-3 py-1.5 ${
                   index === nav.activeIndex ? 'bg-amber-50' : 'hover:bg-gray-50'
                 }`}

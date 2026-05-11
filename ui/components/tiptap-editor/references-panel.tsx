@@ -5,6 +5,7 @@ import type { Editor } from '@tiptap/core';
 import { insertReference } from '@/ui/extensions/reference-mark';
 import { useArticlesSearch } from '@/ui/hooks/use-articles-search';
 import { useListNavigation } from '@/ui/hooks/use-list-navigation';
+import { completePrefix } from '@/lib/complete-prefix';
 
 interface ReferencesPanelProps {
   editor: Editor;
@@ -15,7 +16,7 @@ export function ReferencesPanel({ editor, onClose }: ReferencesPanelProps) {
   const [query, setQuery] = useState('');
   const { results, loading } = useArticlesSearch(query);
   const panelRef = useRef<HTMLDivElement>(null);
-  const nav = useListNavigation(results.length);
+  const nav = useListNavigation(results, (a) => a.id);
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -60,9 +61,23 @@ export function ReferencesPanel({ editor, onClose }: ReferencesPanelProps) {
               return;
             }
             if (nav.handleKeyDown(e)) return;
-            if (e.key === 'Enter' && results[nav.activeIndex]) {
+            if (e.key === 'ArrowLeft' && nav.activeItem) {
+              const input = e.currentTarget;
+              if (
+                input.selectionStart === input.value.length &&
+                input.selectionEnd === input.value.length
+              ) {
+                const next = completePrefix(query, nav.activeItem.title);
+                if (next !== null) {
+                  e.preventDefault();
+                  setQuery(next);
+                }
+              }
+              return;
+            }
+            if (e.key === 'Enter' && nav.activeItem) {
               e.preventDefault();
-              handleSelect(results[nav.activeIndex]);
+              handleSelect(nav.activeItem);
             }
           }}
         />
@@ -75,7 +90,7 @@ export function ReferencesPanel({ editor, onClose }: ReferencesPanelProps) {
         {results.map((article, index) => (
           <button
             key={article.id}
-            ref={nav.setItemRef(index)}
+            ref={nav.setItemRef(article.id)}
             type="button"
             className={`w-full px-3 py-2 text-right text-sm text-gray-700 ${
               index === nav.activeIndex ? 'bg-blue-100' : 'hover:bg-blue-50'

@@ -2,50 +2,78 @@
 
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 
-export interface ListNavigation {
+export interface ListNavigation<T> {
   activeIndex: number;
+  activeItem: T | null;
   setActiveIndex: (index: number) => void;
   handleKeyDown: (e: KeyboardEvent) => boolean;
-  setItemRef: (index: number) => (el: HTMLElement | null) => void;
+  setItemRef: (key: string) => (el: HTMLElement | null) => void;
 }
 
-export function useListNavigation(itemCount: number): ListNavigation {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const itemRefs = useRef<(HTMLElement | null)[]>([]);
+export function useListNavigation<T>(
+  items: T[],
+  getKey: (item: T) => string,
+): ListNavigation<T> {
+  const [activeKey, setActiveKey] = useState<string | null>(() =>
+    items[0] ? getKey(items[0]) : null,
+  );
+  const itemRefs = useRef<Map<string, HTMLElement>>(new Map());
 
   useEffect(() => {
-    setActiveIndex(0);
-  }, [itemCount]);
+    if (items.length === 0) {
+      if (activeKey !== null) setActiveKey(null);
+      return;
+    }
+    if (activeKey === null || !items.some((it) => getKey(it) === activeKey)) {
+      setActiveKey(getKey(items[0]));
+    }
+  }, [items, activeKey, getKey]);
+
+  const activeIndex =
+    activeKey === null ? -1 : items.findIndex((it) => getKey(it) === activeKey);
 
   useEffect(() => {
-    const el = itemRefs.current[activeIndex];
+    if (activeKey === null) return;
+    const el = itemRefs.current.get(activeKey);
     if (el) el.scrollIntoView({ block: 'nearest' });
-  }, [activeIndex]);
+  }, [activeKey]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent): boolean => {
-      if (itemCount === 0) return false;
+      if (items.length === 0) return false;
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setActiveIndex(activeIndex >= itemCount - 1 ? 0 : activeIndex + 1);
+        const next =
+          activeIndex < 0 || activeIndex >= items.length - 1 ? 0 : activeIndex + 1;
+        setActiveKey(getKey(items[next]));
         return true;
       }
       if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setActiveIndex(activeIndex <= 0 ? itemCount - 1 : activeIndex - 1);
+        const next = activeIndex <= 0 ? items.length - 1 : activeIndex - 1;
+        setActiveKey(getKey(items[next]));
         return true;
       }
       return false;
     },
-    [itemCount, activeIndex],
+    [items, activeIndex, getKey],
   );
 
   const setItemRef = useCallback(
-    (index: number) => (el: HTMLElement | null) => {
-      itemRefs.current[index] = el;
+    (key: string) => (el: HTMLElement | null) => {
+      if (el) itemRefs.current.set(key, el);
+      else itemRefs.current.delete(key);
     },
     [],
   );
 
-  return { activeIndex, setActiveIndex, handleKeyDown, setItemRef };
+  return {
+    activeIndex,
+    activeItem: activeIndex >= 0 ? items[activeIndex] : null,
+    setActiveIndex: (i: number) => {
+      if (items[i]) setActiveKey(getKey(items[i]));
+    },
+    handleKeyDown,
+    setItemRef,
+  };
 }

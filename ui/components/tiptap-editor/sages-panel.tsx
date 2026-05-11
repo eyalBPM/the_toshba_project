@@ -6,6 +6,7 @@ import { insertSage } from '@/ui/extensions/sage-mark';
 import { useSagesSearch } from '@/ui/hooks/use-sages-search';
 import type { SnapshotTag } from '@/ui/hooks/use-editor-state';
 import { useListNavigation } from '@/ui/hooks/use-list-navigation';
+import { completePrefix } from '@/lib/complete-prefix';
 
 interface SagesPanelProps {
   editor: Editor;
@@ -17,7 +18,7 @@ export function SagesPanel({ editor, onClose }: SagesPanelProps) {
   const { results, loading } = useSagesSearch(query);
   const [creating, setCreating] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
-  const nav = useListNavigation(results.length);
+  const nav = useListNavigation(results, (s) => s.id);
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -79,10 +80,24 @@ export function SagesPanel({ editor, onClose }: SagesPanelProps) {
               return;
             }
             if (nav.handleKeyDown(e)) return;
+            if (e.key === 'ArrowLeft' && nav.activeItem) {
+              const input = e.currentTarget;
+              if (
+                input.selectionStart === input.value.length &&
+                input.selectionEnd === input.value.length
+              ) {
+                const next = completePrefix(query, nav.activeItem.text);
+                if (next !== null) {
+                  e.preventDefault();
+                  setQuery(next);
+                }
+              }
+              return;
+            }
             if (e.key === 'Enter') {
               e.preventDefault();
-              if (results.length > 0 && results[nav.activeIndex]) {
-                handleSelect(results[nav.activeIndex]);
+              if (nav.activeItem) {
+                handleSelect(nav.activeItem);
               } else {
                 handleCreate();
               }
@@ -98,7 +113,7 @@ export function SagesPanel({ editor, onClose }: SagesPanelProps) {
         {results.map((sage, index) => (
           <button
             key={sage.id}
-            ref={nav.setItemRef(index)}
+            ref={nav.setItemRef(sage.id)}
             type="button"
             className={`w-full px-3 py-1.5 text-right text-sm text-gray-700 ${
               index === nav.activeIndex ? 'bg-green-50' : 'hover:bg-gray-50'
