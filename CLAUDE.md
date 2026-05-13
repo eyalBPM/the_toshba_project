@@ -235,11 +235,12 @@ Supports:
 
 ## Abstract Entities
 
-Topics and Sources support **abstract** usage:
+All four taggable entities — **Topics, Sources, Sages, and References** — support **abstract** usage:
 
 - They CAN exist in the revision snapshot without appearing in the article body
-- A separate UI button adds them to the snapshot abstractly
-- Sages and References do NOT support abstract usage
+- A separate UI button (or, for topics/sages, a "create + add as abstract" action when the queried text is new) adds them to the snapshot abstractly
+- Abstract entries are persisted as part of the corresponding `*Snapshot` field; there is no separate "abstract" flag stored in the DB. On load, abstract entries are derived as the set difference `snapshot − inline-occurrences-in-content`
+- Each entity has a sidebar surface where the user can see and delete abstract entries (see per-entity sections below)
 
 ---
 
@@ -255,6 +256,8 @@ Behavior:
 - Links are always editable (label and target article)
 - Stored as part of TipTap content JSON (no separate table)
 - On insert: added to referencesSnapshot. On delete: removed from snapshot
+- **Abstract support:** separate button adds reference to referencesSnapshot without inserting a link into the body
+- **Sidebar panel:** always visible next to editor, shows all current references with delete option. Deleting non-abstract reference also removes its link nodes from body
 
 ---
 
@@ -313,6 +316,7 @@ Behavior:
 - On hover over citation: fetch source text from **Sefaria API** using source's `path`, display in tooltip
 - On insert: added to sourcesSnapshot. On delete: removed from snapshot
 - **Abstract support:** separate button adds source to sourcesSnapshot without inserting a citation into the body
+- **Sidebar panel:** always visible next to editor, shows all current sources with delete option. Deleting a non-abstract source also removes all of its citation nodes from the body (numbering of the remaining footnotes shifts accordingly). Abstract sources appear only in the sidebar and not in the numbered footer.
 
 ### Missing Sources
 
@@ -345,7 +349,7 @@ Trigger: UI button or Shift+5. Floating combobox (editable dropdown).
 
 Behavior:
 - Same insert/delete/snapshot behavior as Topics
-- No abstract support
+- **Abstract support:** separate button adds sage to sagesSnapshot without inserting into body (same as Topics)
 - **Sidebar panel:** same as Topics
 
 Management:
@@ -377,15 +381,15 @@ While writing content, user can insert:
 
 - Sources using Shift+2 or UI button → searchable select, inserts `[n]` citation or abstract
 - Topics using Shift+3 or UI button → combobox, inserts inline or abstract
-- References using Shift+4 or UI button → searchable select of articles, inserts link
-- Sages using Shift+5 or UI button → combobox, inserts inline
+- References using Shift+4 or UI button → searchable select of articles, inserts link or abstract
+- Sages using Shift+5 or UI button → combobox, inserts inline or abstract
 - Tables using Shift+6 or UI button → inserts a default 3×3 table with a header row at the cursor
 
 System must support:
 
 - autocomplete / search in floating panels
 - creation on-the-fly (topics and sages only)
-- sidebar panel showing all current topics/sages with delete
+- sidebar panel showing all current topics / sages / sources / references with delete
 - Wikipedia-style `[n]` footnotes for sources with footer
 - Sefaria API tooltip on source hover
 - "Missing Source" for uncatalogued references

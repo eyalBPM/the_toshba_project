@@ -84,3 +84,20 @@ export function insertReference(
     })
     .run();
 }
+
+/** Removes all reference atom nodes with the given articleId from the entire document. */
+export function removeReferenceMark(editor: Editor, articleId: string) {
+  const { doc, tr } = editor.state;
+  const positions: { from: number; to: number }[] = [];
+  doc.descendants((node, pos) => {
+    if (node.type.name === 'referenceMark' && node.attrs.articleId === articleId) {
+      positions.push({ from: pos, to: pos + node.nodeSize });
+    }
+  });
+  for (let i = positions.length - 1; i >= 0; i--) {
+    tr.delete(positions[i].from, positions[i].to);
+  }
+  if (tr.docChanged) {
+    editor.view.dispatch(tr);
+  }
+}

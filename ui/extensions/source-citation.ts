@@ -111,3 +111,26 @@ export function insertSourceCitation(
     })
     .run();
 }
+
+/**
+ * Removes all sourceCitation nodes with the given sourceId from the entire
+ * document. Numbering of the remaining citations recomputes automatically via
+ * the NodeView, which derives its number from document order each render.
+ * Does not handle "missing" sources — those are removed by deleting the
+ * citation node directly in the editor.
+ */
+export function removeSourceCitation(editor: Editor, sourceId: string) {
+  const { doc, tr } = editor.state;
+  const positions: { from: number; to: number }[] = [];
+  doc.descendants((node, pos) => {
+    if (node.type.name === 'sourceCitation' && node.attrs.sourceId === sourceId) {
+      positions.push({ from: pos, to: pos + node.nodeSize });
+    }
+  });
+  for (let i = positions.length - 1; i >= 0; i--) {
+    tr.delete(positions[i].from, positions[i].to);
+  }
+  if (tr.docChanged) {
+    editor.view.dispatch(tr);
+  }
+}

@@ -10,10 +10,11 @@ import { completePrefix } from '@/lib/complete-prefix';
 
 interface SagesPanelProps {
   editor: Editor;
+  onAbstractAdd?: (tag: SnapshotTag) => void;
   onClose: () => void;
 }
 
-export function SagesPanel({ editor, onClose }: SagesPanelProps) {
+export function SagesPanel({ editor, onAbstractAdd, onClose }: SagesPanelProps) {
   const [query, setQuery] = useState('');
   const { results, loading } = useSagesSearch(query);
   const [creating, setCreating] = useState(false);
@@ -35,19 +36,38 @@ export function SagesPanel({ editor, onClose }: SagesPanelProps) {
     ? undefined
     : editor.state.doc.textBetween(from, to);
 
+  async function createSage(): Promise<SnapshotTag | null> {
+    const res = await fetch('/api/sages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: query.trim() }),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data as SnapshotTag;
+  }
+
   async function handleCreate() {
-    if (!query.trim()) return;
+    if (!query.trim() || creating) return;
     setCreating(true);
     try {
-      const res = await fetch('/api/sages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: query.trim() }),
-      });
-      if (res.ok) {
-        const json = await res.json();
-        const tag = json.data as SnapshotTag;
+      const tag = await createSage();
+      if (tag) {
         insertSage(editor, tag.id, tag.text, selectedText);
+        onClose();
+      }
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function handleCreateAbstract() {
+    if (!query.trim() || creating || !onAbstractAdd) return;
+    setCreating(true);
+    try {
+      const tag = await createSage();
+      if (tag) {
+        onAbstractAdd(tag);
         onClose();
       }
     } finally {
@@ -57,6 +77,11 @@ export function SagesPanel({ editor, onClose }: SagesPanelProps) {
 
   function handleSelect(sage: SnapshotTag) {
     insertSage(editor, sage.id, sage.text, selectedText);
+    onClose();
+  }
+
+  function handleAbstract(sage: SnapshotTag) {
+    onAbstractAdd?.(sage);
     onClose();
   }
 
@@ -111,28 +136,55 @@ export function SagesPanel({ editor, onClose }: SagesPanelProps) {
           <p className="px-3 py-2 text-xs text-gray-400">מחפש...</p>
         )}
         {results.map((sage, index) => (
-          <button
+          <div
             key={sage.id}
             ref={nav.setItemRef(sage.id)}
-            type="button"
-            className={`w-full px-3 py-1.5 text-right text-sm text-gray-700 ${
+            className={`flex items-center justify-between gap-1 px-3 py-1.5 ${
               index === nav.activeIndex ? 'bg-green-50' : 'hover:bg-gray-50'
             }`}
             onMouseEnter={() => nav.setActiveIndex(index)}
-            onClick={() => handleSelect(sage)}
           >
-            {sage.text}
-          </button>
+            <button
+              type="button"
+              className="flex-1 text-right text-sm text-gray-700"
+              onClick={() => handleSelect(sage)}
+            >
+              {sage.text}
+            </button>
+            {onAbstractAdd && (
+              <button
+                type="button"
+                className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500 hover:bg-green-100 hover:text-green-700"
+                title="הוסף לרשימה בלבד (ללא הכנסה לגוף)"
+                onClick={() => handleAbstract(sage)}
+              >
+                רקע
+              </button>
+            )}
+          </div>
         ))}
         {!loading && query.trim() && results.length === 0 && (
-          <button
-            type="button"
-            className="w-full px-3 py-2 text-right text-sm text-green-600 hover:bg-green-50"
-            onClick={handleCreate}
-            disabled={creating}
-          >
-            {creating ? 'יוצר...' : `צור: "${query.trim()}"`}
-          </button>
+          <div className="flex items-stretch">
+            <button
+              type="button"
+              className="flex-1 px-3 py-2 text-right text-sm text-green-600 hover:bg-green-50 disabled:opacity-50"
+              onClick={handleCreate}
+              disabled={creating}
+            >
+              {creating ? 'יוצר...' : `צור: "${query.trim()}"`}
+            </button>
+            {onAbstractAdd && (
+              <button
+                type="button"
+                className="shrink-0 border-r border-gray-100 px-2 py-2 text-xs text-gray-500 hover:bg-green-100 hover:text-green-700 disabled:opacity-50"
+                title='צור והוסף לרשימה בלבד (ללא הכנסה לגוף)'
+                onClick={handleCreateAbstract}
+                disabled={creating}
+              >
+                רקע
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>

@@ -13,7 +13,7 @@ import { ImageNodeExtension } from '@/ui/extensions/image-node';
 import { TableExtensions } from '@/ui/extensions/table';
 import { ImageUploadButton } from './tiptap-editor/image-upload-button';
 import { useEditorState } from '@/ui/hooks/use-editor-state';
-import type { SnapshotTag } from '@/ui/hooks/use-editor-state';
+import type { SnapshotTag, ReferenceTag } from '@/ui/hooks/use-editor-state';
 import { useEditorPanels } from '@/ui/hooks/use-editor-panels';
 import { useSources } from '@/ui/hooks/use-sources';
 import { useAutoSave } from '@/ui/hooks/use-auto-save';
@@ -26,6 +26,8 @@ import { SagesPanel } from './tiptap-editor/sages-panel';
 import { ReferencesPanel } from './tiptap-editor/references-panel';
 import { TopicsSidebar } from './tiptap-editor/topics-sidebar';
 import { SagesSidebar } from './tiptap-editor/sages-sidebar';
+import { SourcesSidebar } from './tiptap-editor/sources-sidebar';
+import { ReferencesSidebar } from './tiptap-editor/references-sidebar';
 import { RevisionEditorActions } from './revision-editor-actions';
 import { McrEditorActions } from './mcr-editor-actions';
 import { ConfirmDialog } from './confirm-dialog';
@@ -36,10 +38,10 @@ interface RevisionEditorProps {
   revisionId: string;
   initialTitle: string;
   initialContent: unknown;
-  initialTopics: SnapshotTag[];
-  initialSages: SnapshotTag[];
   initialAbstractTopics?: SnapshotTag[];
   initialAbstractSources?: SnapshotTag[];
+  initialAbstractSages?: SnapshotTag[];
+  initialAbstractReferences?: ReferenceTag[];
   status: string;
   agreementCount?: number;
   deleteRedirectUrl: string;
@@ -56,10 +58,10 @@ export function RevisionEditor({
   revisionId,
   initialTitle,
   initialContent,
-  initialTopics,
-  initialSages,
   initialAbstractTopics = [],
   initialAbstractSources = [],
+  initialAbstractSages = [],
+  initialAbstractReferences = [],
   status,
   agreementCount = 0,
   deleteRedirectUrl,
@@ -113,10 +115,24 @@ export function RevisionEditor({
     snapshot,
     abstractTopics,
     abstractSources,
+    abstractSages,
+    abstractReferences,
     addAbstractTopic,
     addAbstractSource,
+    addAbstractSage,
+    addAbstractReference,
     removeAbstractTopic,
-  } = useEditorState(editor, sources, initialAbstractTopics, initialAbstractSources);
+    removeAbstractSource,
+    removeAbstractSage,
+    removeAbstractReference,
+  } = useEditorState(
+    editor,
+    sources,
+    initialAbstractTopics,
+    initialAbstractSources,
+    initialAbstractSages,
+    initialAbstractReferences,
+  );
 
   const { activePanel, closePanel } = useEditorPanels(editor);
 
@@ -248,10 +264,18 @@ export function RevisionEditor({
                   />
                 )}
                 {activePanel === 'sages' && (
-                  <SagesPanel editor={editor} onClose={closePanel} />
+                  <SagesPanel
+                    editor={editor}
+                    onAbstractAdd={addAbstractSage}
+                    onClose={closePanel}
+                  />
                 )}
                 {activePanel === 'references' && (
-                  <ReferencesPanel editor={editor} onClose={closePanel} />
+                  <ReferencesPanel
+                    editor={editor}
+                    onAbstractAdd={addAbstractReference}
+                    onClose={closePanel}
+                  />
                 )}
               </div>
             )}
@@ -267,10 +291,15 @@ export function RevisionEditor({
           <SourceFooter editor={editor} sources={sources} />
         </div>
 
-        {/* Sidebar: topics + sages */}
+        {/* Sidebar: topics + sages + sources + references */}
         {(snapshot.topicsSnapshot.length > 0 ||
+          snapshot.sagesSnapshot.length > 0 ||
+          snapshot.sourcesSnapshot.length > 0 ||
+          snapshot.referencesSnapshot.length > 0 ||
           abstractTopics.length > 0 ||
-          snapshot.sagesSnapshot.length > 0) && (
+          abstractSages.length > 0 ||
+          abstractSources.length > 0 ||
+          abstractReferences.length > 0) && (
           <div className="w-44 shrink-0 space-y-4">
             <TopicsSidebar
               editor={editor}
@@ -278,7 +307,24 @@ export function RevisionEditor({
               abstractTopics={abstractTopics}
               onDeleteAbstract={removeAbstractTopic}
             />
-            <SagesSidebar editor={editor} bodySages={snapshot.sagesSnapshot} />
+            <SagesSidebar
+              editor={editor}
+              bodySages={snapshot.sagesSnapshot}
+              abstractSages={abstractSages}
+              onDeleteAbstract={removeAbstractSage}
+            />
+            <SourcesSidebar
+              editor={editor}
+              bodySources={snapshot.sourcesSnapshot}
+              abstractSources={abstractSources}
+              onDeleteAbstract={removeAbstractSource}
+            />
+            <ReferencesSidebar
+              editor={editor}
+              bodyReferences={snapshot.referencesSnapshot}
+              abstractReferences={abstractReferences}
+              onDeleteAbstract={removeAbstractReference}
+            />
           </div>
         )}
       </div>

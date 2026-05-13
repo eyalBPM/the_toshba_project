@@ -10,11 +10,17 @@ export interface SnapshotTag {
   text: string;
 }
 
+export interface ReferenceTag {
+  articleId: string;
+  slug: string;
+  title: string;
+}
+
 export interface EditorSnapshot {
   topicsSnapshot: SnapshotTag[];
   sagesSnapshot: SnapshotTag[];
   sourcesSnapshot: { id: string; label: string }[];
-  referencesSnapshot: { articleId: string; slug: string; title: string }[];
+  referencesSnapshot: ReferenceTag[];
   contentLength: number;
 }
 
@@ -23,11 +29,13 @@ function deriveSnapshotFromDoc(
   sources: DbSourceItem[],
   abstractTopics: SnapshotTag[],
   abstractSources: SnapshotTag[],
+  abstractSages: SnapshotTag[],
+  abstractReferences: ReferenceTag[],
 ): EditorSnapshot {
   const { doc } = editor.state;
   const topicsMap = new Map<string, SnapshotTag>();
   const sagesMap = new Map<string, SnapshotTag>();
-  const refsMap = new Map<string, { articleId: string; slug: string; title: string }>();
+  const refsMap = new Map<string, ReferenceTag>();
 
   doc.descendants((node) => {
     if (node.type.name === 'topicMark') {
@@ -49,9 +57,15 @@ function deriveSnapshotFromDoc(
     }
   });
 
-  // Merge abstract topics into body topics
+  // Merge abstract entries (only if not already present in body)
   for (const t of abstractTopics) {
     if (!topicsMap.has(t.id)) topicsMap.set(t.id, t);
+  }
+  for (const s of abstractSages) {
+    if (!sagesMap.has(s.id)) sagesMap.set(s.id, s);
+  }
+  for (const r of abstractReferences) {
+    if (!refsMap.has(r.articleId)) refsMap.set(r.articleId, r);
   }
 
   // Build sourcesSnapshot from citations in document order (real sources only)
@@ -84,9 +98,15 @@ export function useEditorState(
   sources: DbSourceItem[],
   initialAbstractTopics: SnapshotTag[] = [],
   initialAbstractSources: SnapshotTag[] = [],
+  initialAbstractSages: SnapshotTag[] = [],
+  initialAbstractReferences: ReferenceTag[] = [],
 ) {
   const [abstractTopics, setAbstractTopics] = useState<SnapshotTag[]>(initialAbstractTopics);
   const [abstractSources, setAbstractSources] = useState<SnapshotTag[]>(initialAbstractSources);
+  const [abstractSages, setAbstractSages] = useState<SnapshotTag[]>(initialAbstractSages);
+  const [abstractReferences, setAbstractReferences] = useState<ReferenceTag[]>(
+    initialAbstractReferences,
+  );
   const [snapshot, setSnapshot] = useState<EditorSnapshot>({
     topicsSnapshot: [],
     sagesSnapshot: [],
@@ -97,8 +117,17 @@ export function useEditorState(
 
   const recompute = useCallback(() => {
     if (!editor) return;
-    setSnapshot(deriveSnapshotFromDoc(editor, sources, abstractTopics, abstractSources));
-  }, [editor, sources, abstractTopics, abstractSources]);
+    setSnapshot(
+      deriveSnapshotFromDoc(
+        editor,
+        sources,
+        abstractTopics,
+        abstractSources,
+        abstractSages,
+        abstractReferences,
+      ),
+    );
+  }, [editor, sources, abstractTopics, abstractSources, abstractSages, abstractReferences]);
 
   // Recompute on every transaction that changes the document
   useEffect(() => {
@@ -124,6 +153,16 @@ export function useEditorState(
     setAbstractSources((prev) => (prev.find((s) => s.id === tag.id) ? prev : [...prev, tag]));
   }, []);
 
+  const addAbstractSage = useCallback((tag: SnapshotTag) => {
+    setAbstractSages((prev) => (prev.find((s) => s.id === tag.id) ? prev : [...prev, tag]));
+  }, []);
+
+  const addAbstractReference = useCallback((tag: ReferenceTag) => {
+    setAbstractReferences((prev) =>
+      prev.find((r) => r.articleId === tag.articleId) ? prev : [...prev, tag],
+    );
+  }, []);
+
   const removeAbstractTopic = useCallback((id: string) => {
     setAbstractTopics((prev) => prev.filter((t) => t.id !== id));
   }, []);
@@ -132,13 +171,27 @@ export function useEditorState(
     setAbstractSources((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
+  const removeAbstractSage = useCallback((id: string) => {
+    setAbstractSages((prev) => prev.filter((s) => s.id !== id));
+  }, []);
+
+  const removeAbstractReference = useCallback((articleId: string) => {
+    setAbstractReferences((prev) => prev.filter((r) => r.articleId !== articleId));
+  }, []);
+
   return {
     snapshot,
     abstractTopics,
     abstractSources,
+    abstractSages,
+    abstractReferences,
     addAbstractTopic,
     addAbstractSource,
+    addAbstractSage,
+    addAbstractReference,
     removeAbstractTopic,
     removeAbstractSource,
+    removeAbstractSage,
+    removeAbstractReference,
   };
 }

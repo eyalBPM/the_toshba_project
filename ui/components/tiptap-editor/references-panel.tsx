@@ -4,15 +4,17 @@ import { useState, useRef, useEffect } from 'react';
 import type { Editor } from '@tiptap/core';
 import { insertReference } from '@/ui/extensions/reference-mark';
 import { useArticlesSearch } from '@/ui/hooks/use-articles-search';
+import type { ReferenceTag } from '@/ui/hooks/use-editor-state';
 import { useListNavigation } from '@/ui/hooks/use-list-navigation';
 import { completePrefix } from '@/lib/complete-prefix';
 
 interface ReferencesPanelProps {
   editor: Editor;
+  onAbstractAdd?: (tag: ReferenceTag) => void;
   onClose: () => void;
 }
 
-export function ReferencesPanel({ editor, onClose }: ReferencesPanelProps) {
+export function ReferencesPanel({ editor, onAbstractAdd, onClose }: ReferencesPanelProps) {
   const [query, setQuery] = useState('');
   const { results, loading } = useArticlesSearch(query);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -35,6 +37,11 @@ export function ReferencesPanel({ editor, onClose }: ReferencesPanelProps) {
 
   function handleSelect(article: (typeof results)[number]) {
     insertReference(editor, article, selectedText);
+    onClose();
+  }
+
+  function handleAbstract(article: (typeof results)[number]) {
+    onAbstractAdd?.({ articleId: article.id, slug: article.slug, title: article.title });
     onClose();
   }
 
@@ -88,18 +95,32 @@ export function ReferencesPanel({ editor, onClose }: ReferencesPanelProps) {
           <p className="px-3 py-2 text-xs text-gray-400">מחפש...</p>
         )}
         {results.map((article, index) => (
-          <button
+          <div
             key={article.id}
             ref={nav.setItemRef(article.id)}
-            type="button"
-            className={`w-full px-3 py-2 text-right text-sm text-gray-700 ${
+            className={`flex items-center justify-between gap-1 px-3 py-2 ${
               index === nav.activeIndex ? 'bg-blue-100' : 'hover:bg-blue-50'
             }`}
             onMouseEnter={() => nav.setActiveIndex(index)}
-            onClick={() => handleSelect(article)}
           >
-            {article.title}
-          </button>
+            <button
+              type="button"
+              className="flex-1 text-right text-sm text-gray-700"
+              onClick={() => handleSelect(article)}
+            >
+              {article.title}
+            </button>
+            {onAbstractAdd && (
+              <button
+                type="button"
+                className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500 hover:bg-blue-100 hover:text-blue-700"
+                title="הוסף לרשימה בלבד (ללא הכנסה לגוף)"
+                onClick={() => handleAbstract(article)}
+              >
+                רקע
+              </button>
+            )}
+          </div>
         ))}
         {!loading && query.trim() && results.length === 0 && (
           <p className="px-3 py-2 text-xs text-gray-400">לא נמצאו ערכים</p>
