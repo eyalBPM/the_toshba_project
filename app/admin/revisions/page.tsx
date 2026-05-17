@@ -25,7 +25,7 @@ export default async function AdminRevisionsPage() {
               <tr>
                 <th className="px-4 py-3 text-right font-medium text-gray-600">כותרת</th>
                 <th className="px-4 py-3 text-right font-medium text-gray-600">מאת</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-600">ערך</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600">מאמר</th>
                 <th className="px-4 py-3 text-right font-medium text-gray-600">תאריך</th>
                 <th className="px-4 py-3 text-right font-medium text-gray-600">סטטוס</th>
               </tr>
@@ -43,7 +43,7 @@ export default async function AdminRevisionsPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-600">{rev.createdBy.name}</td>
                   <td className="px-4 py-3 text-gray-500 text-xs">
-                    {rev.article?.title ?? 'ערך חדש'}
+                    {rev.article?.title ?? 'מאמר חדש'}
                   </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">
                     {new Date(rev.createdAt).toLocaleDateString('he-IL')}

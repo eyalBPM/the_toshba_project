@@ -33,7 +33,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
     },
     {
       label: 'הפניות',
-      title: 'הוסף הפניה לערך (Shift+4)',
+      title: 'הוסף הפניה למאמר (Shift+4)',
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onClick: () => (editor as any).emit('openReferencesPanel', {}),
     },

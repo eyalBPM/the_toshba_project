@@ -109,11 +109,11 @@ export function PrintListForm({ printListId, initialSettings }: PrintListFormPro
 
       {/* Article selection */}
       <div className="rounded-md border border-gray-200 bg-white p-4">
-        <h3 className="mb-2 text-sm font-medium text-gray-700">בחירת ערכים</h3>
+        <h3 className="mb-2 text-sm font-medium text-gray-700">בחירת מאמרים</h3>
         <input
           type="text"
           className="mb-2 w-full rounded border border-gray-300 px-2 py-1 text-sm"
-          placeholder="חיפוש ערכים..."
+          placeholder="חיפוש מאמרים..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -134,7 +134,7 @@ export function PrintListForm({ printListId, initialSettings }: PrintListFormPro
         </div>
         {(settings.articleIds?.length ?? 0) > 0 && (
           <p className="mt-2 text-xs text-gray-500">
-            {settings.articleIds?.length} ערכים נבחרו
+            {settings.articleIds?.length} מאמרים נבחרו
           </p>
         )}
       </div>

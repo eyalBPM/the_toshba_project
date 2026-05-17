@@ -45,7 +45,7 @@ export default async function OpinionViewPage({
             href={`/articles/${slug}`}
             className="text-sm text-blue-600 hover:underline"
           >
-            חזרה לערך
+            חזרה למאמר
           </Link>
           {isOwner && (
             <OpinionViewActions

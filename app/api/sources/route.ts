@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await createManySources(parsed.data.sources);
-    revalidateTag('sources', 'max');
+    revalidateTag('sources', { expire: 0 });
     return apiSuccess({ inserted: result.count }, 201);
   } catch {
     return ApiErrors.internal();

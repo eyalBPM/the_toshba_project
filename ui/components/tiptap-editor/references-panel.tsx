@@ -52,14 +52,14 @@ export function ReferencesPanel({ editor, onAbstractAdd, onClose }: ReferencesPa
       dir="rtl"
     >
       <div className="border-b border-gray-100 px-3 py-2">
-        <p className="text-xs font-medium text-gray-600">הפניה לערך</p>
+        <p className="text-xs font-medium text-gray-600">הפניה למאמר</p>
       </div>
       <div className="p-2">
         <input
           autoFocus
           type="text"
           className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-          placeholder="חיפוש שם ערך..."
+          placeholder="חיפוש שם מאמר..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -123,10 +123,10 @@ export function ReferencesPanel({ editor, onAbstractAdd, onClose }: ReferencesPa
           </div>
         ))}
         {!loading && query.trim() && results.length === 0 && (
-          <p className="px-3 py-2 text-xs text-gray-400">לא נמצאו ערכים</p>
+          <p className="px-3 py-2 text-xs text-gray-400">לא נמצאו מאמרים</p>
         )}
         {!query.trim() && (
-          <p className="px-3 py-2 text-xs text-gray-400">הקלד שם ערך לחיפוש</p>
+          <p className="px-3 py-2 text-xs text-gray-400">הקלד שם מאמר לחיפוש</p>
         )}
       </div>
     </div>

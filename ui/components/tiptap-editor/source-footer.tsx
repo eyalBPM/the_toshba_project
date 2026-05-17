@@ -38,11 +38,12 @@ export function SourceFooter({ editor, sources }: SourceFooterProps) {
           result.push({ number: idx + 1, sourceId: 'missing', label: c.missingText ?? '' });
         } else {
           const src = sources.find((s) => s.id === c.sourceId);
+          if (!src) return;
           result.push({
             number: idx + 1,
             sourceId: c.sourceId,
-            label: src?.label ?? c.sourceId,
-            path: src?.path,
+            label: src.label,
+            path: src.path,
           });
         }
       });

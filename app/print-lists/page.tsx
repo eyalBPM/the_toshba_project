@@ -51,7 +51,7 @@ export default async function PrintListsPage() {
                     רשימת הדפסה
                   </Link>
                   <p className="text-xs text-gray-500">
-                    {articleCount} ערכים ·{' '}
+                    {articleCount} מאמרים ·{' '}
                     {new Date(list.createdAt).toLocaleDateString('he-IL')}
                   </p>
                 </div>

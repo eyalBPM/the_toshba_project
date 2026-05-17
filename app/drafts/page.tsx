@@ -64,7 +64,7 @@ export default async function DraftsPage() {
                         {rev.title || '(ללא שם)'}
                       </Link>
                       {rev.article && (
-                        <p className="text-xs text-gray-400">ערך: {rev.article.title}</p>
+                        <p className="text-xs text-gray-400">מאמר: {rev.article.title}</p>
                       )}
                     </td>
                     <td className="px-4 py-3 text-gray-600">

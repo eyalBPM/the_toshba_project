@@ -33,7 +33,7 @@ export default async function PrintListPrintPage({
   if (articleIds.length === 0) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-8" dir="rtl">
-        <p className="text-gray-500">לא נבחרו ערכים להדפסה.</p>
+        <p className="text-gray-500">לא נבחרו מאמרים להדפסה.</p>
       </main>
     );
   }
