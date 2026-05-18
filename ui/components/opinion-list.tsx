@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 interface OpinionResponseItem {
   id: string;
@@ -192,7 +193,7 @@ export function OpinionList({
                       >
                         <div className="flex items-center justify-between text-xs text-gray-500">
                           <span>{resp.user.name}</span>
-                          <span>{new Date(resp.createdAt).toLocaleDateString('he-IL')}</span>
+                          <span>{formatHebrewDate(resp.createdAt)}</span>
                         </div>
                         {isOwnedDraft && (
                           <span className="mt-1 inline-block rounded bg-yellow-100 px-1.5 py-0.5 text-[10px] font-medium text-yellow-800">

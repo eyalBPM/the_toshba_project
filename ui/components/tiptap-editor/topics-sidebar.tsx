@@ -5,10 +5,11 @@ import { removeTopicMark } from '@/ui/extensions/topic-mark';
 import type { SnapshotTag } from '@/ui/hooks/use-editor-state';
 
 interface TopicsSidebarProps {
-  editor: Editor | null;
+  editor?: Editor | null;
   bodyTopics: SnapshotTag[];
   abstractTopics: SnapshotTag[];
-  onDeleteAbstract: (id: string) => void;
+  onDeleteAbstract?: (id: string) => void;
+  readOnly?: boolean;
 }
 
 export function TopicsSidebar({
@@ -16,6 +17,7 @@ export function TopicsSidebar({
   bodyTopics,
   abstractTopics,
   onDeleteAbstract,
+  readOnly = false,
 }: TopicsSidebarProps) {
   const allTopics = [
     ...bodyTopics.map((t) => ({ ...t, abstract: false })),
@@ -30,12 +32,7 @@ export function TopicsSidebar({
     if (!isAbstract && editor) {
       removeTopicMark(editor, topicId);
     }
-    if (isAbstract) {
-      onDeleteAbstract(topicId);
-    } else {
-      // Also remove from abstract if it happens to be there
-      onDeleteAbstract(topicId);
-    }
+    onDeleteAbstract?.(topicId);
   }
 
   return (
@@ -52,14 +49,16 @@ export function TopicsSidebar({
               {topic.abstract && (
                 <span className="text-xs text-gray-400">[רקע]</span>
               )}
-              <button
-                type="button"
-                onClick={() => handleDelete(topic.id, topic.abstract)}
-                className="text-blue-400 hover:text-red-500 text-xs"
-                title="הסר נושא"
-              >
-                ×
-              </button>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() => handleDelete(topic.id, topic.abstract)}
+                  className="text-blue-400 hover:text-red-500 text-xs"
+                  title="הסר נושא"
+                >
+                  ×
+                </button>
+              )}
             </div>
           </div>
         ))}

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { listAllMissingSources } from '@/db/missing-source-repository';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function AdminMissingSourcesPage() {
   const items = await listAllMissingSources();
@@ -48,7 +49,7 @@ export default async function AdminMissingSourcesPage() {
                       </Link>
                     </td>
                     <td className="px-4 py-3 text-gray-600">
-                      {new Date(item.createdAt).toLocaleDateString('he-IL')}
+                      {formatHebrewDate(item.createdAt)}
                     </td>
                   </tr>
                 );

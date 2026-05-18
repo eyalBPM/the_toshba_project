@@ -5,10 +5,11 @@ import { removeReferenceMark } from '@/ui/extensions/reference-mark';
 import type { ReferenceTag } from '@/ui/hooks/use-editor-state';
 
 interface ReferencesSidebarProps {
-  editor: Editor | null;
+  editor?: Editor | null;
   bodyReferences: ReferenceTag[];
   abstractReferences: ReferenceTag[];
-  onDeleteAbstract: (articleId: string) => void;
+  onDeleteAbstract?: (articleId: string) => void;
+  readOnly?: boolean;
 }
 
 export function ReferencesSidebar({
@@ -16,6 +17,7 @@ export function ReferencesSidebar({
   bodyReferences,
   abstractReferences,
   onDeleteAbstract,
+  readOnly = false,
 }: ReferencesSidebarProps) {
   const allRefs = [
     ...bodyReferences.map((r) => ({ ...r, abstract: false })),
@@ -30,7 +32,7 @@ export function ReferencesSidebar({
     if (!isAbstract && editor) {
       removeReferenceMark(editor, articleId);
     }
-    onDeleteAbstract(articleId);
+    onDeleteAbstract?.(articleId);
   }
 
   return (
@@ -42,19 +44,29 @@ export function ReferencesSidebar({
             key={ref.articleId}
             className="flex items-center justify-between gap-1 rounded bg-indigo-50 px-2 py-0.5"
           >
-            <span className="text-xs text-indigo-800">{ref.title}</span>
+            <a
+              href={`/articles/${ref.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-indigo-800 hover:underline"
+              title={`פתח את "${ref.title}" בטאב חדש`}
+            >
+              {ref.title}
+            </a>
             <div className="flex items-center gap-1">
               {ref.abstract && (
                 <span className="text-xs text-gray-400">[רקע]</span>
               )}
-              <button
-                type="button"
-                onClick={() => handleDelete(ref.articleId, ref.abstract)}
-                className="text-indigo-400 hover:text-red-500 text-xs"
-                title="הסר הפניה"
-              >
-                ×
-              </button>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() => handleDelete(ref.articleId, ref.abstract)}
+                  className="text-indigo-400 hover:text-red-500 text-xs"
+                  title="הסר הפניה"
+                >
+                  ×
+                </button>
+              )}
             </div>
           </div>
         ))}

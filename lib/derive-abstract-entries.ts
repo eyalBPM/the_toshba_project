@@ -71,3 +71,67 @@ export function deriveAbstractReferences(
     (r) => r && r.articleId && !bodyIds.has(r.articleId),
   );
 }
+
+export function deriveBodyTopics(
+  topicsSnapshot: unknown,
+  content: unknown,
+): SnapshotTag[] {
+  if (!Array.isArray(topicsSnapshot)) return [];
+  const bodyIds = collectInlineIds(content, 'topicMark', 'topicId');
+  return (topicsSnapshot as SnapshotTag[]).filter((t) => t && t.id && bodyIds.has(t.id));
+}
+
+export function deriveBodySages(
+  sagesSnapshot: unknown,
+  content: unknown,
+): SnapshotTag[] {
+  if (!Array.isArray(sagesSnapshot)) return [];
+  const bodyIds = collectInlineIds(content, 'sageMark', 'sageId');
+  return (sagesSnapshot as SnapshotTag[]).filter((s) => s && s.id && bodyIds.has(s.id));
+}
+
+export function deriveBodySources(
+  sourcesSnapshot: unknown,
+  content: unknown,
+): SourceSnapshotEntry[] {
+  if (!Array.isArray(sourcesSnapshot)) return [];
+  const bodyIds = collectInlineIds(content, 'sourceCitation', 'sourceId');
+  return (sourcesSnapshot as SourceSnapshotEntry[]).filter(
+    (s) => s && s.id && bodyIds.has(s.id),
+  );
+}
+
+export function deriveBodyReferences(
+  referencesSnapshot: unknown,
+  content: unknown,
+): ReferenceSnapshotEntry[] {
+  if (!Array.isArray(referencesSnapshot)) return [];
+  const bodyIds = collectInlineIds(content, 'referenceMark', 'articleId');
+  return (referencesSnapshot as ReferenceSnapshotEntry[]).filter(
+    (r) => r && r.articleId && bodyIds.has(r.articleId),
+  );
+}
+
+/**
+ * Returns a Map<sourceId, number> mirroring `getCitationNumbers` semantics
+ * (first occurrence wins; missing-source citations are excluded since they
+ * have no stable id). Used by read-only view pages to label body sources in
+ * the sidebar consistently with the inline [n] badges.
+ */
+export function deriveSourceNumbers(content: unknown): Map<string, number> {
+  const result = new Map<string, number>();
+  let next = 1;
+  function walk(node: TipTapNode | unknown) {
+    if (!node || typeof node !== 'object') return;
+    const n = node as TipTapNode;
+    if (n.type === 'sourceCitation') {
+      const sourceId = n.attrs?.sourceId;
+      if (typeof sourceId === 'string' && sourceId !== 'missing' && !result.has(sourceId)) {
+        result.set(sourceId, next++);
+      }
+    }
+    if (Array.isArray(n.content)) n.content.forEach(walk);
+  }
+  walk(content);
+  return result;
+}

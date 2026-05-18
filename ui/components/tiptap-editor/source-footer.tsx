@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Editor } from '@tiptap/core';
-import { getCitationList } from '@/ui/extensions/source-citation';
+import { getCitationNumbers } from '@/ui/extensions/source-citation';
 import { SourceTooltip } from './source-tooltip';
 import type { DbSourceItem } from '@/ui/hooks/use-sources';
 
@@ -26,21 +26,21 @@ export function SourceFooter({ editor, sources }: SourceFooterProps) {
 
     function recompute() {
       if (!editor) return;
-      const citations = getCitationList(editor.state.doc);
-      // Deduplicate by sourceId for footer display, keeping first occurrence number
-      const seen = new Set<string>();
+      const { citations, numbers } = getCitationNumbers(editor.state.doc);
+      // One footer entry per unique citation number (matches the inline [n] badges).
+      const seen = new Set<number>();
       const result: FooterEntry[] = [];
       citations.forEach((c, idx) => {
-        const key = c.sourceId === 'missing' ? `missing-${idx}` : c.sourceId;
-        if (seen.has(key)) return;
-        seen.add(key);
+        const n = numbers[idx];
+        if (seen.has(n)) return;
+        seen.add(n);
         if (c.sourceId === 'missing') {
-          result.push({ number: idx + 1, sourceId: 'missing', label: c.missingText ?? '' });
+          result.push({ number: n, sourceId: 'missing', label: c.missingText ?? '' });
         } else {
           const src = sources.find((s) => s.id === c.sourceId);
           if (!src) return;
           result.push({
-            number: idx + 1,
+            number: n,
             sourceId: c.sourceId,
             label: src.label,
             path: src.path,

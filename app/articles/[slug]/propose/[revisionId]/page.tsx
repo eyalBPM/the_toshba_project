@@ -12,6 +12,8 @@ import { RevisionImages } from '@/ui/components/revision-images';
 import { MinorChangeStatus } from '@/ui/components/minor-change-status';
 import { MinorChangeReview } from '@/ui/components/minor-change-review';
 import { EditRevisionButton } from '@/ui/components/edit-revision-button';
+import { ContentSidebar } from '@/ui/components/tiptap-editor/content-sidebar';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function ProposedRevisionPage({
   params,
@@ -51,13 +53,15 @@ export default async function ProposedRevisionPage({
     : [];
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
+    <main className="px-4 py-8">
+      <div className="flex gap-6" dir="rtl">
+        <div className="min-w-0 flex-1">
       <div className="mb-6 flex items-start justify-between">
         <div>
           <h1 className="text-xl font-bold">{revision.title}</h1>
           <p className="text-sm text-gray-500">
             הוצע על ידי {revision.createdBy.name} ·{' '}
-            {new Date(revision.createdAt).toLocaleDateString('he-IL')}
+            {formatHebrewDate(revision.createdAt)}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -161,6 +165,16 @@ export default async function ProposedRevisionPage({
             pendingMcrId={pendingMcr?.id}
           />
         )}
+      </div>
+        </div>
+
+        <aside className="w-44 shrink-0">
+          <ContentSidebar
+            readOnly
+            snapshot={revision.snapshot}
+            content={revision.content}
+          />
+        </aside>
       </div>
     </main>
   );

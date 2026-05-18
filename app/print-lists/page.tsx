@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth-utils';
 import { listPrintListsByUser } from '@/db/print-list-repository';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function PrintListsPage() {
   const currentUser = await getCurrentUser();
@@ -52,7 +53,7 @@ export default async function PrintListsPage() {
                   </Link>
                   <p className="text-xs text-gray-500">
                     {articleCount} מאמרים ·{' '}
-                    {new Date(list.createdAt).toLocaleDateString('he-IL')}
+                    {formatHebrewDate(list.createdAt)}
                   </p>
                 </div>
                 <div className="flex gap-2">

@@ -4,6 +4,7 @@ import { findMinorChangeRequestById } from '@/db/minor-change-repository';
 import { findRevisionById } from '@/db/revision-repository';
 import { MinorChangeActions } from '@/ui/components/admin/minor-change-actions';
 import { ContentRenderer } from '@/ui/components/content-renderer';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function AdminMinorChangeDetailPage({
   params,
@@ -27,7 +28,7 @@ export default async function AdminMinorChangeDetailPage({
             <p className="text-lg font-medium">{revision?.title ?? 'גרסה'}</p>
             <p className="text-sm text-gray-500">
               מבקש: {request.requestedBy.name} ·{' '}
-              {new Date(request.createdAt).toLocaleDateString('he-IL')}
+              {formatHebrewDate(request.createdAt)}
             </p>
             <p className="mt-1 text-xs text-gray-400">סטטוס: {request.status}</p>
           </div>

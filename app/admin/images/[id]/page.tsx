@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { findImageById } from '@/db/image-repository';
 import { ImageActions } from '@/ui/components/admin/image-actions';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function AdminImageDetailPage({
   params,
@@ -26,7 +27,7 @@ export default async function AdminImageDetailPage({
         <div className="p-4">
           <p className="text-sm text-gray-600">
             העלה: {image.uploadedBy.name} ·{' '}
-            {new Date(image.createdAt).toLocaleDateString('he-IL')}
+            {formatHebrewDate(image.createdAt)}
           </p>
           <p className="text-sm text-gray-500">גרסה: {image.revision.title}</p>
           <p className="mt-1 text-xs text-gray-400">סטטוס: {image.status}</p>

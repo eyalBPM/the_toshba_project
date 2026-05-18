@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { listPendingImages } from '@/db/image-repository';
 import { ImageActions } from '@/ui/components/admin/image-actions';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function AdminImagesPage() {
   const images = await listPendingImages();
@@ -30,7 +31,7 @@ export default async function AdminImagesPage() {
               <div className="p-3">
                 <p className="text-xs text-gray-500">
                   {img.uploadedBy.name} ·{' '}
-                  {new Date(img.createdAt).toLocaleDateString('he-IL')}
+                  {formatHebrewDate(img.createdAt)}
                 </p>
                 <p className="text-xs text-gray-400">גרסה: {img.revision.title}</p>
                 <div className="mt-2">

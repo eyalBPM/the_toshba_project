@@ -5,10 +5,11 @@ import { removeSageMark } from '@/ui/extensions/sage-mark';
 import type { SnapshotTag } from '@/ui/hooks/use-editor-state';
 
 interface SagesSidebarProps {
-  editor: Editor | null;
+  editor?: Editor | null;
   bodySages: SnapshotTag[];
   abstractSages: SnapshotTag[];
-  onDeleteAbstract: (id: string) => void;
+  onDeleteAbstract?: (id: string) => void;
+  readOnly?: boolean;
 }
 
 export function SagesSidebar({
@@ -16,6 +17,7 @@ export function SagesSidebar({
   bodySages,
   abstractSages,
   onDeleteAbstract,
+  readOnly = false,
 }: SagesSidebarProps) {
   const allSages = [
     ...bodySages.map((s) => ({ ...s, abstract: false })),
@@ -30,7 +32,7 @@ export function SagesSidebar({
     if (!isAbstract && editor) {
       removeSageMark(editor, sageId);
     }
-    onDeleteAbstract(sageId);
+    onDeleteAbstract?.(sageId);
   }
 
   return (
@@ -47,14 +49,16 @@ export function SagesSidebar({
               {sage.abstract && (
                 <span className="text-xs text-gray-400">[רקע]</span>
               )}
-              <button
-                type="button"
-                onClick={() => handleDelete(sage.id, sage.abstract)}
-                className="text-green-400 hover:text-red-500 text-xs"
-                title="הסר חכם"
-              >
-                ×
-              </button>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() => handleDelete(sage.id, sage.abstract)}
+                  className="text-green-400 hover:text-red-500 text-xs"
+                  title="הסר חכם"
+                >
+                  ×
+                </button>
+              )}
             </div>
           </div>
         ))}

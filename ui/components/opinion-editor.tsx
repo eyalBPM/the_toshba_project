@@ -12,7 +12,6 @@ import { KeyboardTriggersExtension } from '@/ui/extensions/keyboard-triggers';
 import { useEditorPanels } from '@/ui/hooks/use-editor-panels';
 import { useSources } from '@/ui/hooks/use-sources';
 import { EditorToolbar } from './tiptap-editor/editor-toolbar';
-import { SourceFooter } from './tiptap-editor/source-footer';
 import { SourcesPanel } from './tiptap-editor/sources-panel';
 import { TopicsPanel } from './tiptap-editor/topics-panel';
 import { SagesPanel } from './tiptap-editor/sages-panel';
@@ -67,6 +66,11 @@ export function OpinionEditor({
     ],
     content: (initialContent as object) ?? {},
     immediatelyRender: false,
+    editorProps: {
+      attributes: {
+        class: 'min-h-184 focus:outline-none',
+      },
+    },
   });
 
   const sources = useSources();
@@ -173,40 +177,44 @@ export function OpinionEditor({
       />
 
       {/* Editor */}
-      <div className="rounded-lg border border-gray-300 bg-white overflow-hidden">
-        <EditorToolbar editor={editor} />
+      <div className="rounded-lg border border-gray-300 bg-white">
+        <div className="sticky top-0 z-20">
+          <EditorToolbar editor={editor} />
 
-        {editor && (
-          <div className="relative px-2 py-1 border-b border-gray-100 bg-gray-50 flex gap-1 flex-wrap" dir="rtl">
-            {activePanel === 'sources' && (
-              <SourcesPanel
-                editor={editor}
-                sources={sources}
-                revisionId={responseId}
-                onClose={closePanel}
-              />
-            )}
-            {activePanel === 'topics' && (
-              <TopicsPanel editor={editor} onClose={closePanel} />
-            )}
-            {activePanel === 'sages' && (
-              <SagesPanel editor={editor} onClose={closePanel} />
-            )}
-            {activePanel === 'references' && (
-              <ReferencesPanel editor={editor} onClose={closePanel} />
-            )}
+          {editor && (
+            <div className="relative" dir="rtl">
+              {activePanel === 'sources' && (
+                <SourcesPanel
+                  editor={editor}
+                  sources={sources}
+                  revisionId={responseId}
+                  onClose={closePanel}
+                />
+              )}
+              {activePanel === 'topics' && (
+                <TopicsPanel editor={editor} onClose={closePanel} />
+              )}
+              {activePanel === 'sages' && (
+                <SagesPanel editor={editor} onClose={closePanel} />
+              )}
+              {activePanel === 'references' && (
+                <ReferencesPanel editor={editor} onClose={closePanel} />
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-gray-100 px-4 py-6 rounded-b-lg">
+          <div className="mx-auto max-w-360 rounded-sm bg-white shadow-md">
+            <div
+              className="prose prose-sm max-w-none px-10 py-8"
+              dir="rtl"
+            >
+              <EditorContent editor={editor} />
+            </div>
           </div>
-        )}
-
-        <div
-          className="prose prose-sm max-w-none p-4 focus:outline-none min-h-[200px]"
-          dir="rtl"
-        >
-          <EditorContent editor={editor} />
         </div>
       </div>
-
-      <SourceFooter editor={editor} sources={sources} />
 
       {/* Auto-save status + actions */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 pt-4">

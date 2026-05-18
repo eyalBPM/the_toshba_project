@@ -11,6 +11,8 @@ import { ContentRenderer } from '@/ui/components/content-renderer';
 import { StatusBadge } from '@/ui/components/status-badge';
 import { ProposeRevisionButton } from './propose-revision-button';
 import { OpinionList } from '@/ui/components/opinion-list';
+import { ContentSidebar } from '@/ui/components/tiptap-editor/content-sidebar';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function ArticlePage({
   params,
@@ -106,7 +108,7 @@ export default async function ArticlePage({
                       </Link>
                       <p className="text-xs text-gray-500">
                         {rev.createdBy.name} ·{' '}
-                        {new Date(rev.createdAt).toLocaleDateString('he-IL')}
+                        {formatHebrewDate(rev.createdAt)}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -126,6 +128,17 @@ export default async function ArticlePage({
             </section>
           )}
         </div>
+
+        {/* Entity sidebar (sources, topics, references, sages) */}
+        {currentRevision && article.snapshot && (
+          <aside className="w-44 shrink-0">
+            <ContentSidebar
+              readOnly
+              snapshot={article.snapshot}
+              content={currentRevision.content}
+            />
+          </aside>
+        )}
 
         {/* Opinion list sidebar */}
         <aside className="w-72 shrink-0">

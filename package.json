@@ -1,6 +1,6 @@
 {
   "name": "the_toshba_project",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -15,8 +15,9 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@hebcal/core": "^6.5.0",
     "@prisma/adapter-pg": "^7.5.0",
-    "@prisma/client": "^7.5.0",
+    "@prisma/client": "^7.8.0",
     "@tanstack/react-query": "^5.95.2",
     "@tiptap/extension-table": "^3.22.5",
     "@tiptap/extension-table-cell": "^3.22.5",
@@ -47,7 +48,7 @@
     "eslint-config-prettier": "^10.1.8",
     "jsdom": "^29.0.1",
     "prettier": "^3.8.1",
-    "prisma": "^7.5.0",
+    "prisma": "^7.8.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.1"

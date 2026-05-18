@@ -2,8 +2,15 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Editor } from '@tiptap/core';
-import { getCitationList } from '@/ui/extensions/source-citation';
+import { getCitationList, getCitationNumbers } from '@/ui/extensions/source-citation';
 import type { DbSourceItem } from './use-sources';
+
+export interface BodySourceItem {
+  id: string;
+  label: string;
+  number: number;
+  path?: string;
+}
 
 export interface SnapshotTag {
   id: string;
@@ -22,6 +29,27 @@ export interface EditorSnapshot {
   sourcesSnapshot: { id: string; label: string }[];
   referencesSnapshot: ReferenceTag[];
   contentLength: number;
+}
+
+function deriveBodySourcesFromDoc(
+  editor: Editor,
+  sources: DbSourceItem[],
+): BodySourceItem[] {
+  const { citations, numbers } = getCitationNumbers(editor.state.doc);
+  const seen = new Map<string, BodySourceItem>();
+  citations.forEach((c, i) => {
+    if (c.sourceId === 'missing') return;
+    if (seen.has(c.sourceId)) return;
+    const src = sources.find((s) => s.id === c.sourceId);
+    if (!src) return;
+    seen.set(c.sourceId, {
+      id: src.id,
+      label: src.label,
+      number: numbers[i],
+      path: src.path,
+    });
+  });
+  return Array.from(seen.values());
 }
 
 function deriveSnapshotFromDoc(
@@ -114,6 +142,7 @@ export function useEditorState(
     referencesSnapshot: [],
     contentLength: 0,
   });
+  const [bodySources, setBodySources] = useState<BodySourceItem[]>([]);
 
   const recompute = useCallback(() => {
     if (!editor) return;
@@ -127,6 +156,7 @@ export function useEditorState(
         abstractReferences,
       ),
     );
+    setBodySources(deriveBodySourcesFromDoc(editor, sources));
   }, [editor, sources, abstractTopics, abstractSources, abstractSages, abstractReferences]);
 
   // Recompute on every transaction that changes the document
@@ -181,6 +211,7 @@ export function useEditorState(
 
   return {
     snapshot,
+    bodySources,
     abstractTopics,
     abstractSources,
     abstractSages,

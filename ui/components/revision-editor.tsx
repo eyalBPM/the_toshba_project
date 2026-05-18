@@ -19,15 +19,11 @@ import { useSources } from '@/ui/hooks/use-sources';
 import { useAutoSave } from '@/ui/hooks/use-auto-save';
 import { useBeforeUnload } from '@/ui/hooks/use-before-unload';
 import { EditorToolbar } from './tiptap-editor/editor-toolbar';
-import { SourceFooter } from './tiptap-editor/source-footer';
 import { SourcesPanel } from './tiptap-editor/sources-panel';
 import { TopicsPanel } from './tiptap-editor/topics-panel';
 import { SagesPanel } from './tiptap-editor/sages-panel';
 import { ReferencesPanel } from './tiptap-editor/references-panel';
-import { TopicsSidebar } from './tiptap-editor/topics-sidebar';
-import { SagesSidebar } from './tiptap-editor/sages-sidebar';
-import { SourcesSidebar } from './tiptap-editor/sources-sidebar';
-import { ReferencesSidebar } from './tiptap-editor/references-sidebar';
+import { ContentSidebar } from './tiptap-editor/content-sidebar';
 import { RevisionEditorActions } from './revision-editor-actions';
 import { McrEditorActions } from './mcr-editor-actions';
 import { ConfirmDialog } from './confirm-dialog';
@@ -100,6 +96,11 @@ export function RevisionEditor({
     content: (effectiveContent as object) ?? {},
     editable,
     immediatelyRender: false,
+    editorProps: {
+      attributes: {
+        class: 'min-h-184 focus:outline-none',
+      },
+    },
   });
 
   // Toggle editor editable state when viewMode changes
@@ -113,6 +114,7 @@ export function RevisionEditor({
 
   const {
     snapshot,
+    bodySources,
     abstractTopics,
     abstractSources,
     abstractSages,
@@ -234,99 +236,85 @@ export function RevisionEditor({
       <div className="flex gap-4" dir="rtl">
         {/* Main editor area */}
         <div className="min-w-0 flex-1">
-          <div className="rounded-lg border border-gray-300 bg-white overflow-hidden">
+          <div className="rounded-lg border border-gray-300 bg-white">
             {editable && (
-              <div className="flex items-center border-b border-gray-100">
-                <EditorToolbar editor={editor} />
+              <div className="sticky top-0 z-20">
+                <EditorToolbar editor={editor}>
+                  {editor && (
+                    <ImageUploadButton editor={editor} revisionId={revisionId} />
+                  )}
+                </EditorToolbar>
+
+                {/* Toolbar panel anchors (zero-height when no panel is open) */}
                 {editor && (
-                  <ImageUploadButton editor={editor} revisionId={revisionId} />
+                  <div className="relative" dir="rtl">
+                    {activePanel === 'sources' && (
+                      <SourcesPanel
+                        editor={editor}
+                        sources={sources}
+                        revisionId={revisionId}
+                        onAbstractAdd={addAbstractSource}
+                        onClose={closePanel}
+                      />
+                    )}
+                    {activePanel === 'topics' && (
+                      <TopicsPanel
+                        editor={editor}
+                        onAbstractAdd={addAbstractTopic}
+                        onClose={closePanel}
+                      />
+                    )}
+                    {activePanel === 'sages' && (
+                      <SagesPanel
+                        editor={editor}
+                        onAbstractAdd={addAbstractSage}
+                        onClose={closePanel}
+                      />
+                    )}
+                    {activePanel === 'references' && (
+                      <ReferencesPanel
+                        editor={editor}
+                        onAbstractAdd={addAbstractReference}
+                        onClose={closePanel}
+                      />
+                    )}
+                  </div>
                 )}
               </div>
             )}
 
-            {/* Toolbar panel anchors */}
-            {editable && editor && (
-              <div className="relative px-2 py-1 border-b border-gray-100 bg-gray-50 flex gap-1 flex-wrap" dir="rtl">
-                {activePanel === 'sources' && (
-                  <SourcesPanel
-                    editor={editor}
-                    sources={sources}
-                    revisionId={revisionId}
-                    onAbstractAdd={addAbstractSource}
-                    onClose={closePanel}
-                  />
-                )}
-                {activePanel === 'topics' && (
-                  <TopicsPanel
-                    editor={editor}
-                    onAbstractAdd={addAbstractTopic}
-                    onClose={closePanel}
-                  />
-                )}
-                {activePanel === 'sages' && (
-                  <SagesPanel
-                    editor={editor}
-                    onAbstractAdd={addAbstractSage}
-                    onClose={closePanel}
-                  />
-                )}
-                {activePanel === 'references' && (
-                  <ReferencesPanel
-                    editor={editor}
-                    onAbstractAdd={addAbstractReference}
-                    onClose={closePanel}
-                  />
-                )}
+            <div className="bg-gray-100 px-4 py-6 rounded-b-lg">
+              <div className="mx-auto max-w-360 rounded-sm bg-white shadow-md">
+                <div
+                  className="prose prose-sm max-w-none px-10 py-8"
+                  dir="rtl"
+                >
+                  <EditorContent editor={editor} />
+                </div>
               </div>
-            )}
-
-            <div
-              className="prose prose-sm max-w-none p-4 focus:outline-none min-h-[200px]"
-              dir="rtl"
-            >
-              <EditorContent editor={editor} />
             </div>
           </div>
 
-          <SourceFooter editor={editor} sources={sources} />
         </div>
 
-        {/* Sidebar: topics + sages + sources + references */}
-        {(snapshot.topicsSnapshot.length > 0 ||
-          snapshot.sagesSnapshot.length > 0 ||
-          snapshot.sourcesSnapshot.length > 0 ||
-          snapshot.referencesSnapshot.length > 0 ||
-          abstractTopics.length > 0 ||
-          abstractSages.length > 0 ||
-          abstractSources.length > 0 ||
-          abstractReferences.length > 0) && (
-          <div className="w-44 shrink-0 space-y-4">
-            <TopicsSidebar
-              editor={editor}
-              bodyTopics={snapshot.topicsSnapshot}
-              abstractTopics={abstractTopics}
-              onDeleteAbstract={removeAbstractTopic}
-            />
-            <SagesSidebar
-              editor={editor}
-              bodySages={snapshot.sagesSnapshot}
-              abstractSages={abstractSages}
-              onDeleteAbstract={removeAbstractSage}
-            />
-            <SourcesSidebar
-              editor={editor}
-              bodySources={snapshot.sourcesSnapshot}
-              abstractSources={abstractSources}
-              onDeleteAbstract={removeAbstractSource}
-            />
-            <ReferencesSidebar
-              editor={editor}
-              bodyReferences={snapshot.referencesSnapshot}
-              abstractReferences={abstractReferences}
-              onDeleteAbstract={removeAbstractReference}
-            />
-          </div>
-        )}
+        {/* Sidebar: sources + topics + references + sages */}
+        <div className="w-44 shrink-0">
+          <ContentSidebar
+            editor={editor}
+            bodySources={bodySources}
+            abstractSources={abstractSources}
+            bodyTopics={snapshot.topicsSnapshot}
+            abstractTopics={abstractTopics}
+            bodyReferences={snapshot.referencesSnapshot}
+            abstractReferences={abstractReferences}
+            bodySages={snapshot.sagesSnapshot}
+            abstractSages={abstractSages}
+            onRemoveAbstractSource={removeAbstractSource}
+            onRemoveAbstractTopic={removeAbstractTopic}
+            onRemoveAbstractReference={removeAbstractReference}
+            onRemoveAbstractSage={removeAbstractSage}
+          />
+        </div>
       </div>
 
       {autoSaveError && <p className="text-sm text-red-600">{autoSaveError}</p>}

@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth-utils';
 import { findVerificationRequestById } from '@/db/verification-repository';
 import { StatusBadge } from '@/ui/components/status-badge';
 import { VerificationActions } from './verification-actions';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function VerificationRequestPage({
   params,
@@ -46,7 +47,7 @@ export default async function VerificationRequestPage({
         </div>
 
         <p className="text-xs text-gray-400">
-          נשלח ב-{new Date(request.createdAt).toLocaleDateString('he-IL')}
+          נשלח ב-{formatHebrewDate(request.createdAt)}
         </p>
       </div>
 

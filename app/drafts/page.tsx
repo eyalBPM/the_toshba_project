@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth-utils';
 import { listRevisionsByUser, listPendingRevisions } from '@/db/revision-repository';
 import { StatusBadge } from '@/ui/components/status-badge';
 import { EditRevisionButton } from '@/ui/components/edit-revision-button';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function DraftsPage() {
   const currentUser = await getCurrentUser();
@@ -74,7 +75,7 @@ export default async function DraftsPage() {
                       <StatusBadge type="requestStatus" value={rev.status} />
                     </td>
                     <td className="px-4 py-3 text-gray-500 text-xs">
-                      {new Date(rev.updatedAt).toLocaleDateString('he-IL')}
+                      {formatHebrewDate(rev.updatedAt)}
                     </td>
                     <td className="px-4 py-3">
                       {isOwn && (rev.status === 'Draft' || rev.status === 'Pending') && (

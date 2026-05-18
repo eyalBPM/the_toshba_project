@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth-utils';
 import { findPendingRequestsByVerifier } from '@/db/verification-repository';
 import { StatusBadge } from '@/ui/components/status-badge';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function VerificationRequestsPage() {
   const user = await getCurrentUser();
@@ -32,7 +33,7 @@ export default async function VerificationRequestsPage() {
                 <div className="flex flex-col items-end gap-2">
                   <StatusBadge type="requestStatus" value={req.status} />
                   <span className="text-xs text-gray-400">
-                    {new Date(req.createdAt).toLocaleDateString('he-IL')}
+                    {formatHebrewDate(req.createdAt)}
                   </span>
                 </div>
               </Link>

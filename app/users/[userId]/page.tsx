@@ -7,6 +7,7 @@ import {
 } from '@/db/verification-repository';
 import { getCurrentUser } from '@/lib/auth-utils';
 import { StatusBadge } from '@/ui/components/status-badge';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function UserProfilePage({
   params,
@@ -54,7 +55,7 @@ export default async function UserProfilePage({
               {activeVerification.verifiedBy.name}
             </a>{' '}
             בתאריך{' '}
-            {new Date(activeVerification.createdAt).toLocaleDateString('he-IL')}
+            {formatHebrewDate(activeVerification.createdAt)}
           </p>
         )}
 

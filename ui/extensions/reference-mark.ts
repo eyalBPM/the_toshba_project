@@ -48,6 +48,8 @@ export const ReferenceMarkExtension = Node.create({
       {
         ...HTMLAttributes,
         href: `/articles/${node.attrs.articleSlug}`,
+        target: '_blank',
+        rel: 'noopener noreferrer',
         'data-article-id': node.attrs.articleId,
         'data-article-slug': node.attrs.articleSlug,
         class: 'reference-mark text-blue-600 underline cursor-pointer',

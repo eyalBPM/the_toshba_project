@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { getNotificationLink } from '@/lib/notification-links';
 import { InfiniteScrollTrigger } from './infinite-scroll-trigger';
+import { formatHebrewDateTime } from '@/lib/hebrew-dates';
 import {
   useMarkNotificationsRead,
   useNotificationsList,
@@ -106,13 +107,7 @@ export function NotificationInbox({ initialNotifications }: NotificationInboxPro
                     {n.message}
                   </p>
                   <div className="mt-1 flex items-center gap-2 text-xs text-gray-400">
-                    <span>
-                      {new Date(n.createdAt).toLocaleDateString('he-IL')}{' '}
-                      {new Date(n.createdAt).toLocaleTimeString('he-IL', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
+                    <span>{formatHebrewDateTime(n.createdAt)}</span>
                     {hasLink && (
                       <span className="inline-flex items-center gap-0.5 text-blue-600">
                         <span aria-hidden="true">←</span>

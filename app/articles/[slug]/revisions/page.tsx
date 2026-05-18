@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { findArticleBySlug } from '@/db/article-repository';
 import { listRevisionsByArticle } from '@/db/revision-repository';
 import { StatusBadge } from '@/ui/components/status-badge';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function ArticleRevisionsPage({
   params,
@@ -39,7 +40,7 @@ export default async function ArticleRevisionsPage({
                   <p className="font-medium">{rev.title}</p>
                   <p className="text-xs text-gray-500">
                     {rev.createdBy.name} ·{' '}
-                    {new Date(rev.createdAt).toLocaleDateString('he-IL')}
+                    {formatHebrewDate(rev.createdAt)}
                   </p>
                 </div>
                 <StatusBadge type="requestStatus" value={rev.status} />

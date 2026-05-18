@@ -6,6 +6,7 @@ import { getCurrentUser } from '@/lib/auth-utils';
 import { canViewOpinionResponse } from '@/application/opinion/can-view-response';
 import { ContentRenderer } from '@/ui/components/content-renderer';
 import { OpinionViewActions } from '@/ui/components/opinion-view-actions';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function OpinionViewPage({
   params,
@@ -37,7 +38,7 @@ export default async function OpinionViewPage({
           <h1 className="text-xl font-bold">חוות דעת</h1>
           <p className="text-sm text-gray-500">
             {response.user.name} · {response.cluster.title} ·{' '}
-            {new Date(response.createdAt).toLocaleDateString('he-IL')}
+            {formatHebrewDate(response.createdAt)}
           </p>
         </div>
         <div className="flex items-center gap-3">
