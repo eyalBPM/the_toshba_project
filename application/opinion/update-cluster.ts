@@ -68,7 +68,7 @@ export async function updateOpinionCluster(
       type: 'CLUSTER_SHARED',
       entityType: 'OpinionCluster',
       entityId: input.clusterId,
-      message: `שותף איתך מקבץ חוות דעת חדש: "${updated.title}"`,
+      message: `שותף איתך מקבץ תגובות דעה חדש: "${updated.title}"`,
     });
   }
 

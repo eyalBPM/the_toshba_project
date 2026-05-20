@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { listPendingRevisions } from '@/db/revision-repository';
 import { StatusBadge } from '@/ui/components/status-badge';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function AdminRevisionsPage() {
   const revisions = await listPendingRevisions();
@@ -25,7 +26,7 @@ export default async function AdminRevisionsPage() {
               <tr>
                 <th className="px-4 py-3 text-right font-medium text-gray-600">כותרת</th>
                 <th className="px-4 py-3 text-right font-medium text-gray-600">מאת</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-600">ערך</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600">מאמר</th>
                 <th className="px-4 py-3 text-right font-medium text-gray-600">תאריך</th>
                 <th className="px-4 py-3 text-right font-medium text-gray-600">סטטוס</th>
               </tr>
@@ -43,10 +44,10 @@ export default async function AdminRevisionsPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-600">{rev.createdBy.name}</td>
                   <td className="px-4 py-3 text-gray-500 text-xs">
-                    {rev.article?.title ?? 'ערך חדש'}
+                    {rev.article?.title ?? 'מאמר חדש'}
                   </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">
-                    {new Date(rev.createdAt).toLocaleDateString('he-IL')}
+                    {formatHebrewDate(rev.createdAt)}
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge type="requestStatus" value={rev.status} />

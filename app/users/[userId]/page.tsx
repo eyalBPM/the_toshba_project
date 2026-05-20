@@ -7,6 +7,7 @@ import {
 } from '@/db/verification-repository';
 import { getCurrentUser } from '@/lib/auth-utils';
 import { StatusBadge } from '@/ui/components/status-badge';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function UserProfilePage({
   params,
@@ -37,7 +38,7 @@ export default async function UserProfilePage({
     !!viewerPendingRequest && viewerPendingRequest.requestedVerifierId === userId;
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
+    <main className="px-4 py-8">
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <h1 className="mb-1 text-2xl font-bold">{user.name}</h1>
         <p className="mb-4 text-sm text-gray-500">{user.email}</p>
@@ -54,7 +55,7 @@ export default async function UserProfilePage({
               {activeVerification.verifiedBy.name}
             </a>{' '}
             בתאריך{' '}
-            {new Date(activeVerification.createdAt).toLocaleDateString('he-IL')}
+            {formatHebrewDate(activeVerification.createdAt)}
           </p>
         )}
 

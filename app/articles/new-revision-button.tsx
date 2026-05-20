@@ -13,7 +13,7 @@ export function NewRevisionButton() {
       const res = await fetch('/api/revisions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'ערך חדש ללא שם' }),
+        body: JSON.stringify({ title: 'מאמר חדש ללא שם' }),
       });
       if (res.ok) {
         const json = await res.json();
@@ -30,7 +30,7 @@ export function NewRevisionButton() {
       disabled={loading}
       className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
     >
-      {loading ? 'יוצר...' : 'הצע ערך חדש'}
+      {loading ? 'יוצר...' : 'הצע מאמר חדש'}
     </button>
   );
 }

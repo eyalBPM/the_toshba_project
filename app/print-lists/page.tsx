@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth-utils';
 import { listPrintListsByUser } from '@/db/print-list-repository';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function PrintListsPage() {
   const currentUser = await getCurrentUser();
@@ -23,7 +24,7 @@ export default async function PrintListsPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
+    <main className="px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">רשימות הדפסה</h1>
       </div>
@@ -51,8 +52,8 @@ export default async function PrintListsPage() {
                     רשימת הדפסה
                   </Link>
                   <p className="text-xs text-gray-500">
-                    {articleCount} ערכים ·{' '}
-                    {new Date(list.createdAt).toLocaleDateString('he-IL')}
+                    {articleCount} מאמרים ·{' '}
+                    {formatHebrewDate(list.createdAt)}
                   </p>
                 </div>
                 <div className="flex gap-2">

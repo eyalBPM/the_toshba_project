@@ -8,6 +8,14 @@ export interface DbSource {
   index: number;
 }
 
+export interface CreateSourceInput {
+  id?: string;
+  book: string;
+  label: string;
+  path: string;
+  index: number;
+}
+
 const SOURCE_SELECT = {
   id: true,
   book: true,
@@ -25,4 +33,18 @@ export async function listSources(): Promise<DbSource[]> {
 
 export async function findSourceById(id: string): Promise<DbSource | null> {
   return prisma.source.findUnique({ where: { id }, select: SOURCE_SELECT });
+}
+
+export async function findSourcesByIds(ids: string[]): Promise<DbSource[]> {
+  if (ids.length === 0) return [];
+  return prisma.source.findMany({
+    where: { id: { in: ids } },
+    select: SOURCE_SELECT,
+  });
+}
+
+export async function createManySources(
+  data: CreateSourceInput[],
+): Promise<{ count: number }> {
+  return prisma.source.createMany({ data, skipDuplicates: true });
 }

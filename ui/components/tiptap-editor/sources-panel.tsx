@@ -5,6 +5,9 @@ import type { Editor } from '@tiptap/core';
 import { insertSourceCitation, getCitationList } from '@/ui/extensions/source-citation';
 import type { DbSourceItem } from '@/ui/hooks/use-sources';
 import type { SnapshotTag } from '@/ui/hooks/use-editor-state';
+import { useListNavigation } from '@/ui/hooks/use-list-navigation';
+import { normalizeHebrewPunctuation } from '@/lib/hebrew-punctuation';
+import { completePrefix } from '@/lib/complete-prefix';
 
 interface SourcesPanelProps {
   editor: Editor;
@@ -37,12 +40,17 @@ export function SourcesPanel({
     return () => document.removeEventListener('mousedown', handler);
   }, [onClose]);
 
-  const filtered = query.trim()
-    ? sources.filter((s) =>
-        s.label.toLowerCase().includes(query.toLowerCase()) ||
-        s.book.toLowerCase().includes(query.toLowerCase()),
-      )
+  const normalizedQuery = normalizeHebrewPunctuation(query.trim().toLowerCase());
+  const filtered = normalizedQuery
+    ? sources.filter((s) => {
+        const label = normalizeHebrewPunctuation(s.label.toLowerCase());
+        const book = normalizeHebrewPunctuation(s.book.toLowerCase());
+        return label.includes(normalizedQuery) || book.includes(normalizedQuery);
+      })
     : sources;
+
+  const visible = filtered.slice(0, 50);
+  const nav = useListNavigation(visible, (s) => s.id);
 
   function handleSelect(source: DbSourceItem) {
     insertSourceCitation(editor, source.id);
@@ -99,16 +107,42 @@ export function SourcesPanel({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Escape') onClose();
+                if (e.key === 'Escape') {
+                  onClose();
+                  return;
+                }
+                if (nav.handleKeyDown(e)) return;
+                if (e.key === 'ArrowLeft' && nav.activeItem) {
+                  const input = e.currentTarget;
+                  if (
+                    input.selectionStart === input.value.length &&
+                    input.selectionEnd === input.value.length
+                  ) {
+                    const next = completePrefix(query, nav.activeItem.label);
+                    if (next !== null) {
+                      e.preventDefault();
+                      setQuery(next);
+                    }
+                  }
+                  return;
+                }
+                if (e.key === 'Enter' && nav.activeItem) {
+                  e.preventDefault();
+                  handleSelect(nav.activeItem);
+                }
               }}
             />
           </div>
 
           <div className="max-h-56 overflow-y-auto">
-            {filtered.slice(0, 50).map((source) => (
+            {visible.map((source, index) => (
               <div
                 key={source.id}
-                className="flex items-center justify-between gap-1 px-3 py-1.5 hover:bg-gray-50"
+                ref={nav.setItemRef(source.id)}
+                className={`flex items-center justify-between gap-1 px-3 py-1.5 ${
+                  index === nav.activeIndex ? 'bg-amber-50' : 'hover:bg-gray-50'
+                }`}
+                onMouseEnter={() => nav.setActiveIndex(index)}
               >
                 <button
                   type="button"

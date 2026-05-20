@@ -7,9 +7,9 @@ export default async function ArticlesPage() {
   const isVerified = currentUser?.status === 'VerifiedUser';
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
+    <main className="px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">ערכים</h1>
+        <h1 className="text-2xl font-bold">מאמרים</h1>
         {isVerified && <NewRevisionButton />}
       </div>
 

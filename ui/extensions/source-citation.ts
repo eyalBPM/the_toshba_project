@@ -15,7 +15,7 @@ export interface CitationEntry {
 
 /**
  * Returns all sourceCitation nodes in document order (top-to-bottom).
- * Used by NodeView (to compute [n]) and by SourceFooter.
+ * Used by NodeView (to compute [n]) and by the sources sidebar.
  */
 export function getCitationList(doc: ProseMirrorNode): CitationEntry[] {
   const entries: CitationEntry[] = [];
@@ -31,15 +31,59 @@ export function getCitationList(doc: ProseMirrorNode): CitationEntry[] {
   return entries;
 }
 
+/**
+ * Returns the citations together with the display number for each one.
+ * Numbering rule: same sourceId reuses the number of its first occurrence;
+ * a new number is allocated only for a sourceId that hasn't appeared yet.
+ * Missing sources are not deduplicated — each instance gets its own number.
+ */
+export function getCitationNumbers(doc: ProseMirrorNode): {
+  citations: CitationEntry[];
+  numbers: number[];
+} {
+  const citations = getCitationList(doc);
+  const numbers: number[] = [];
+  const keyToNumber = new Map<string, number>();
+  let next = 1;
+  for (let i = 0; i < citations.length; i++) {
+    const c = citations[i];
+    const key = c.sourceId === 'missing' ? `__missing_${i}` : c.sourceId;
+    let n = keyToNumber.get(key);
+    if (n === undefined) {
+      n = next++;
+      keyToNumber.set(key, n);
+    }
+    numbers.push(n);
+  }
+  return { citations, numbers };
+}
+
 /** NodeView component for rendering [n] badges */
 function SourceCitationView({ node, editor }: ReactNodeViewProps) {
   const sourceId = node.attrs.sourceId as string;
   const missingText = node.attrs.missingText as string | undefined;
-  const citations = getCitationList(editor.state.doc);
+
+  // NodeViews don't re-render when sibling nodes change, so we subscribe to
+  // doc-changing transactions and force a re-render. Without this, inserting a
+  // citation before an existing one leaves the existing one's number stale
+  // until a remount (e.g. page refresh).
+  const [, forceRender] = React.useReducer((x: number) => x + 1, 0);
+  React.useEffect(() => {
+    if (!editor) return;
+    const handler = ({ transaction }: { transaction: { docChanged: boolean } }) => {
+      if (transaction.docChanged) forceRender();
+    };
+    editor.on('transaction', handler);
+    return () => {
+      editor.off('transaction', handler);
+    };
+  }, [editor]);
+
+  const { citations, numbers } = getCitationNumbers(editor.state.doc);
   const idx = citations.findIndex(
     (c) => c.sourceId === sourceId && c.missingText === missingText,
   );
-  const number = idx >= 0 ? idx + 1 : '?';
+  const number = idx >= 0 ? numbers[idx] : '?';
 
   return React.createElement(
     NodeViewWrapper,
@@ -110,4 +154,27 @@ export function insertSourceCitation(
       attrs: { sourceId, missingText: missingText ?? null },
     })
     .run();
+}
+
+/**
+ * Removes all sourceCitation nodes with the given sourceId from the entire
+ * document. Numbering of the remaining citations recomputes automatically via
+ * the NodeView, which derives its number from document order each render.
+ * Does not handle "missing" sources — those are removed by deleting the
+ * citation node directly in the editor.
+ */
+export function removeSourceCitation(editor: Editor, sourceId: string) {
+  const { doc, tr } = editor.state;
+  const positions: { from: number; to: number }[] = [];
+  doc.descendants((node, pos) => {
+    if (node.type.name === 'sourceCitation' && node.attrs.sourceId === sourceId) {
+      positions.push({ from: pos, to: pos + node.nodeSize });
+    }
+  });
+  for (let i = positions.length - 1; i >= 0; i--) {
+    tr.delete(positions[i].from, positions[i].to);
+  }
+  if (tr.docChanged) {
+    editor.view.dispatch(tr);
+  }
 }

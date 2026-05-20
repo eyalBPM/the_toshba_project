@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { findArticleBySlug } from '@/db/article-repository';
 import { listRevisionsByArticle } from '@/db/revision-repository';
 import { StatusBadge } from '@/ui/components/status-badge';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function ArticleRevisionsPage({
   params,
@@ -17,7 +18,7 @@ export default async function ArticleRevisionsPage({
   const approved = revisions.filter((r) => r.status === 'Approved');
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
+    <main className="px-4 py-8">
       <h1 className="mb-2 text-xl font-bold">היסטוריית גרסאות</h1>
       <p className="mb-6 text-sm text-gray-500">
         <Link href={`/articles/${slug}`} className="text-blue-600 hover:underline">
@@ -39,7 +40,7 @@ export default async function ArticleRevisionsPage({
                   <p className="font-medium">{rev.title}</p>
                   <p className="text-xs text-gray-500">
                     {rev.createdBy.name} ·{' '}
-                    {new Date(rev.createdAt).toLocaleDateString('he-IL')}
+                    {formatHebrewDate(rev.createdAt)}
                   </p>
                 </div>
                 <StatusBadge type="requestStatus" value={rev.status} />

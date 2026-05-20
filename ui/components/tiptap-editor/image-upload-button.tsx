@@ -37,7 +37,6 @@ export function ImageUploadButton({ editor, revisionId }: ImageUploadButtonProps
         insertImage(editor, {
           src: image.url,
           imageId: image.id,
-          status: image.status,
         });
       } else {
         const json = await res.json();
@@ -56,7 +55,7 @@ export function ImageUploadButton({ editor, revisionId }: ImageUploadButtonProps
         type="button"
         onClick={handleClick}
         disabled={uploading}
-        className="rounded px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+        className="rounded px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition-colors disabled:opacity-50"
         title="העלאת תמונה"
       >
         {uploading ? 'מעלה...' : 'תמונה'}

@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth-utils';
 import { listRevisionsByUser, listPendingRevisions } from '@/db/revision-repository';
 import { StatusBadge } from '@/ui/components/status-badge';
 import { EditRevisionButton } from '@/ui/components/edit-revision-button';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function DraftsPage() {
   const currentUser = await getCurrentUser();
@@ -34,7 +35,7 @@ export default async function DraftsPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
+    <main className="px-4 py-8">
       <h1 className="mb-6 text-2xl font-bold">טיוטות והצעות</h1>
 
       {rows.length === 0 ? (
@@ -64,7 +65,7 @@ export default async function DraftsPage() {
                         {rev.title || '(ללא שם)'}
                       </Link>
                       {rev.article && (
-                        <p className="text-xs text-gray-400">ערך: {rev.article.title}</p>
+                        <p className="text-xs text-gray-400">מאמר: {rev.article.title}</p>
                       )}
                     </td>
                     <td className="px-4 py-3 text-gray-600">
@@ -74,7 +75,7 @@ export default async function DraftsPage() {
                       <StatusBadge type="requestStatus" value={rev.status} />
                     </td>
                     <td className="px-4 py-3 text-gray-500 text-xs">
-                      {new Date(rev.updatedAt).toLocaleDateString('he-IL')}
+                      {formatHebrewDate(rev.updatedAt)}
                     </td>
                     <td className="px-4 py-3">
                       {isOwn && (rev.status === 'Draft' || rev.status === 'Pending') && (

@@ -25,7 +25,7 @@ export function AppHeader() {
 
   return (
     <header className="border-b border-gray-200 bg-white" dir="rtl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-2">
+      <div className="flex items-center justify-between px-4 py-2">
         <Link href="/articles" className="text-lg font-bold text-blue-700">
           תושב&quot;ע
         </Link>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatHebrewDateTime } from '@/lib/hebrew-dates';
 
 interface Props {
   requestId: string;
@@ -34,7 +35,7 @@ export function PendingRequestPanel({ requestId, verifierName, message, createdA
     }
   }
 
-  const created = new Date(createdAt).toLocaleString('he-IL');
+  const created = formatHebrewDateTime(createdAt);
 
   return (
     <div className="space-y-4 rounded-md border border-amber-200 bg-amber-50 p-4">

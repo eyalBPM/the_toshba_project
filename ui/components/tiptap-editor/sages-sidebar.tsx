@@ -5,35 +5,61 @@ import { removeSageMark } from '@/ui/extensions/sage-mark';
 import type { SnapshotTag } from '@/ui/hooks/use-editor-state';
 
 interface SagesSidebarProps {
-  editor: Editor | null;
+  editor?: Editor | null;
   bodySages: SnapshotTag[];
+  abstractSages: SnapshotTag[];
+  onDeleteAbstract?: (id: string) => void;
+  readOnly?: boolean;
 }
 
-export function SagesSidebar({ editor, bodySages }: SagesSidebarProps) {
-  if (bodySages.length === 0) return null;
+export function SagesSidebar({
+  editor,
+  bodySages,
+  abstractSages,
+  onDeleteAbstract,
+  readOnly = false,
+}: SagesSidebarProps) {
+  const allSages = [
+    ...bodySages.map((s) => ({ ...s, abstract: false })),
+    ...abstractSages
+      .filter((s) => !bodySages.find((b) => b.id === s.id))
+      .map((s) => ({ ...s, abstract: true })),
+  ];
 
-  function handleDelete(sageId: string) {
-    if (editor) removeSageMark(editor, sageId);
+  if (allSages.length === 0) return null;
+
+  function handleDelete(sageId: string, isAbstract: boolean) {
+    if (!isAbstract && editor) {
+      removeSageMark(editor, sageId);
+    }
+    onDeleteAbstract?.(sageId);
   }
 
   return (
     <div dir="rtl">
       <p className="mb-1 text-xs font-medium text-gray-500">חכמים</p>
       <div className="space-y-1">
-        {bodySages.map((sage) => (
+        {allSages.map((sage) => (
           <div
             key={sage.id}
             className="flex items-center justify-between gap-1 rounded bg-green-50 px-2 py-0.5"
           >
             <span className="text-xs text-green-800">{sage.text}</span>
-            <button
-              type="button"
-              onClick={() => handleDelete(sage.id)}
-              className="text-green-400 hover:text-red-500 text-xs"
-              title="הסר חכם"
-            >
-              ×
-            </button>
+            <div className="flex items-center gap-1">
+              {sage.abstract && (
+                <span className="text-xs text-gray-400">[רקע]</span>
+              )}
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() => handleDelete(sage.id, sage.abstract)}
+                  className="text-green-400 hover:text-red-500 text-xs"
+                  title="הסר חכם"
+                >
+                  ×
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>

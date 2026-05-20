@@ -4,33 +4,43 @@ import { Node } from '@tiptap/core';
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import type { ReactNodeViewProps } from '@tiptap/react';
 import React from 'react';
+import { useImageVisibility } from '@/ui/components/image-visibility-context';
 
 function ImageNodeView(props: ReactNodeViewProps) {
-  const { src, imageId, status } = props.node.attrs;
-  const isPending = status === 'PendingApproval';
+  const { src, imageId } = props.node.attrs;
+  const { isOwner, imageStatuses } = useImageVisibility();
+
+  if (!isOwner) {
+    const status = imageStatuses[imageId];
+    if (status === 'Rejected') {
+      return React.createElement(NodeViewWrapper, { className: 'my-2' });
+    }
+    if (status !== 'Approved') {
+      return React.createElement(
+        NodeViewWrapper,
+        { className: 'my-2' },
+        React.createElement(
+          'div',
+          {
+            className:
+              'flex items-center gap-2 rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-4 text-sm text-gray-500',
+          },
+          React.createElement('span', { 'aria-hidden': true }, '📷'),
+          React.createElement('span', null, 'תמונה ממתינה לאישור הניהול'),
+        ),
+      );
+    }
+  }
 
   return React.createElement(
     NodeViewWrapper,
     { className: 'my-2' },
-    React.createElement(
-      'div',
-      { className: 'relative inline-block max-w-full' },
-      React.createElement('img', {
-        src,
-        alt: '',
-        className: `max-w-full rounded-md border ${isPending ? 'border-amber-300 opacity-75' : 'border-gray-200'}`,
-        draggable: false,
-      }),
-      isPending &&
-        React.createElement(
-          'span',
-          {
-            className:
-              'absolute top-2 right-2 rounded bg-amber-500 px-2 py-0.5 text-xs font-medium text-white',
-          },
-          'ממתין לאישור',
-        ),
-    ),
+    React.createElement('img', {
+      src,
+      alt: '',
+      className: 'max-w-full rounded-md border border-gray-200',
+      draggable: false,
+    }),
   );
 }
 
@@ -44,7 +54,6 @@ export const ImageNodeExtension = Node.create({
     return {
       src: { default: '' },
       imageId: { default: '' },
-      status: { default: 'PendingApproval' },
     };
   },
 
@@ -63,7 +72,6 @@ export const ImageNodeExtension = Node.create({
         'data-type': 'uploaded-image',
         'data-src': HTMLAttributes.src,
         'data-image-id': HTMLAttributes.imageId,
-        'data-status': HTMLAttributes.status,
       },
       ['img', { src: HTMLAttributes.src, alt: '' }],
     ];
@@ -76,7 +84,7 @@ export const ImageNodeExtension = Node.create({
 
 export function insertImage(
   editor: InstanceType<typeof import('@tiptap/core').Editor>,
-  attrs: { src: string; imageId: string; status: string },
+  attrs: { src: string; imageId: string },
 ) {
   editor
     .chain()

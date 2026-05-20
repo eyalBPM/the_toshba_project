@@ -18,6 +18,6 @@ test.describe('authentication', () => {
 
   test('articles page is accessible without login', async ({ page }) => {
     await page.goto('/articles');
-    await expect(page.locator('h1')).toContainText('ערכים');
+    await expect(page.locator('h1')).toContainText('מאמרים');
   });
 });

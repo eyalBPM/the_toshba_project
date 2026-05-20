@@ -35,7 +35,7 @@ export function ArticlesTable() {
         <input
           type="text"
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="חיפוש ערכים..."
+          placeholder="חיפוש מאמרים..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -44,7 +44,7 @@ export function ArticlesTable() {
       {isLoading ? (
         <p className="text-gray-400 text-sm">טוען...</p>
       ) : items.length === 0 ? (
-        <p className="text-gray-500">לא נמצאו ערכים.</p>
+        <p className="text-gray-500">לא נמצאו מאמרים.</p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gray-200 text-sm">

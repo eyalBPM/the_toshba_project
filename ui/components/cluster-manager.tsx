@@ -70,7 +70,7 @@ export function ClusterManager() {
   return (
     <div className="space-y-3" dir="rtl">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-700">קבצי חוות דעת</h3>
+        <h3 className="text-sm font-semibold text-gray-700">מקבצי תגובות דעה</h3>
         <button
           onClick={() => setShowCreate(!showCreate)}
           className="text-xs text-blue-600 hover:underline"
@@ -120,7 +120,7 @@ export function ClusterManager() {
               <p className="text-sm font-medium text-gray-700">{cluster.title}</p>
               <p className="text-xs text-gray-500">
                 {visibilityLabels[cluster.visibility] ?? cluster.visibility} ·{' '}
-                {cluster._count.responses} חוות דעת
+                {cluster._count.responses} תגובות דעה
               </p>
             </div>
             {cluster._count.responses === 0 && (

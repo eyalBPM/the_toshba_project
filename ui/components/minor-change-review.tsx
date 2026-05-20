@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 interface MinorChangeRequest {
   id: string;
@@ -70,7 +71,7 @@ export function MinorChangeReview({ revisionId, userRole }: MinorChangeReviewPro
         >
           <p className="mb-1 text-xs text-gray-500">
             {req.requestedBy.name} ·{' '}
-            {new Date(req.createdAt).toLocaleDateString('he-IL')}
+            {formatHebrewDate(req.createdAt)}
           </p>
           <p className="mb-2 text-gray-700">{req.message}</p>
           <div className="flex gap-2">

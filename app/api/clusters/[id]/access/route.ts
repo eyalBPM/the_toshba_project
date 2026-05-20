@@ -72,7 +72,7 @@ export async function POST(
         type: 'CLUSTER_SHARED',
         entityType: 'OpinionCluster',
         entityId: id,
-        message: `שותף איתך מקבץ חוות דעת חדש: "${cluster.title}"`,
+        message: `שותף איתך מקבץ תגובות דעה חדש: "${cluster.title}"`,
       });
     }
 

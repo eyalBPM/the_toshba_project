@@ -34,3 +34,44 @@ export async function listMissingSourcesByRevision(revisionId: string): Promise<
     orderBy: { citationNumber: 'asc' },
   });
 }
+
+export interface DbMissingSourceWithContext {
+  id: string;
+  revisionId: string;
+  citationNumber: number;
+  text: string;
+  createdAt: Date;
+  createdBy: { id: string; name: string };
+  revision: {
+    id: string;
+    title: string;
+    status: string;
+    article: { slug: string } | null;
+  };
+}
+
+export async function listAllMissingSources(opts: { limit?: number } = {}): Promise<
+  DbMissingSourceWithContext[]
+> {
+  const limit = opts.limit ?? 200;
+  return prisma.missingSources.findMany({
+    select: {
+      id: true,
+      revisionId: true,
+      citationNumber: true,
+      text: true,
+      createdAt: true,
+      createdBy: { select: { id: true, name: true } },
+      revision: {
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          article: { select: { slug: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  });
+}

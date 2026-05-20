@@ -235,11 +235,12 @@ Supports:
 
 ## Abstract Entities
 
-Topics and Sources support **abstract** usage:
+All four taggable entities — **Topics, Sources, Sages, and References** — support **abstract** usage:
 
 - They CAN exist in the revision snapshot without appearing in the article body
-- A separate UI button adds them to the snapshot abstractly
-- Sages and References do NOT support abstract usage
+- A separate UI button (or, for topics/sages, a "create + add as abstract" action when the queried text is new) adds them to the snapshot abstractly
+- Abstract entries are persisted as part of the corresponding `*Snapshot` field; there is no separate "abstract" flag stored in the DB. On load, abstract entries are derived as the set difference `snapshot − inline-occurrences-in-content`
+- Each entity has a sidebar surface where the user can see and delete abstract entries (see per-entity sections below)
 
 ---
 
@@ -255,6 +256,8 @@ Behavior:
 - Links are always editable (label and target article)
 - Stored as part of TipTap content JSON (no separate table)
 - On insert: added to referencesSnapshot. On delete: removed from snapshot
+- **Abstract support:** separate button adds reference to referencesSnapshot without inserting a link into the body
+- **Sidebar panel:** always visible next to editor, shows all current references with delete option. Deleting non-abstract reference also removes its link nodes from body
 
 ---
 
@@ -286,7 +289,7 @@ Rules:
 
 ## Sources
 
-A predefined reference table (loaded via script, not user-created).
+A predefined reference table (loaded via a secret-protected admin endpoint, not user-created).
 
 Fields:
 
@@ -296,6 +299,15 @@ Fields:
 - path (Sefaria API path)
 - index (for sorting)
 
+### Loader endpoint
+
+`POST /api/sources` is the **only** write surface for the `Source` table — there is no user-facing UI for creating, editing, or deleting sources.
+
+- **Auth:** `Authorization: Bearer <secret>` header. The secret is read from `process.env.SOURCES_ADMIN_SECRET`. Missing/incorrect token → 401. Missing env var → 500.
+- **Body:** `{ sources: [{ id?, book, label, path, index }, ...] }` (Zod-validated). `id` is optional; supplying it allows idempotent re-runs (re-inserting the same `id` is silently skipped via `createMany skipDuplicates: true`). When omitted, a fresh cuid is generated and re-runs will create duplicates — callers that want idempotency MUST supply stable ids.
+- **Response:** `{ inserted: number }` with HTTP 201.
+- **Cache:** the GET endpoint serves from an in-process memory cache in `lib/sources-cache.ts` (Next.js `unstable_cache` is unusable here — the serialized table exceeds its 2MB per-entry limit). On successful POST, the handler clears the cache so subsequent reads see the new rows. The admin endpoint `POST /api/admin/cache/reset-sources` exposes the same invalidation for manual use.
+
 Trigger: UI button or Shift+2. Searchable select shows sources by label.
 
 Behavior:
@@ -304,6 +316,7 @@ Behavior:
 - On hover over citation: fetch source text from **Sefaria API** using source's `path`, display in tooltip
 - On insert: added to sourcesSnapshot. On delete: removed from snapshot
 - **Abstract support:** separate button adds source to sourcesSnapshot without inserting a citation into the body
+- **Sidebar panel:** always visible next to editor, shows all current sources with delete option. Deleting a non-abstract source also removes all of its citation nodes from the body (numbering of the remaining footnotes shifts accordingly). Abstract sources appear only in the sidebar and not in the numbered footer.
 
 ### Missing Sources
 
@@ -336,7 +349,7 @@ Trigger: UI button or Shift+5. Floating combobox (editable dropdown).
 
 Behavior:
 - Same insert/delete/snapshot behavior as Topics
-- No abstract support
+- **Abstract support:** separate button adds sage to sagesSnapshot without inserting into body (same as Topics)
 - **Sidebar panel:** same as Topics
 
 Management:
@@ -358,7 +371,16 @@ Fields:
 - uploadedByUserId
 - status (PendingApproval | Approved | Rejected)
 
-Only approved images are visible.
+### Visibility
+
+The image file itself is served statically from `public/uploads/images/` (no auth). The "only approved images are visible" rule is enforced at **render time** in the TipTap `uploadedImage` node:
+
+- **Revision owner** (`currentUser.id === revision.createdByUserId`) — always sees the image inline in the content, regardless of status.
+- **Any other viewer** — sees the image inline only when `status === 'Approved'`. For `PendingApproval`, a placeholder is rendered in place of the `<img>` (text: `"📷 תמונה ממתינה לאישור הניהול"`). For `Rejected`, nothing is rendered at all (no placeholder).
+
+The status is NOT stored inside the TipTap content JSON. The `uploadedImage` node carries `src` and `imageId` only; the renderer looks up the current status from the DB via the `ImageVisibilityProvider` context (`isOwner`, `imageStatuses: Record<imageId, ImageStatus>`), which each page populates server-side.
+
+No per-image status indicator is shown in the body to the owner. The `RevisionImages` sidebar shows per-image status badges and, when at least one image is pending, displays the note `"תמונות שטרם אושרו אינן גלויות למשתמשים אחרים עד לאישור הניהול"`.
 
 ---
 
@@ -368,17 +390,29 @@ While writing content, user can insert:
 
 - Sources using Shift+2 or UI button → searchable select, inserts `[n]` citation or abstract
 - Topics using Shift+3 or UI button → combobox, inserts inline or abstract
-- References using Shift+4 or UI button → searchable select of articles, inserts link
-- Sages using Shift+5 or UI button → combobox, inserts inline
+- References using Shift+4 or UI button → searchable select of articles, inserts link or abstract
+- Sages using Shift+5 or UI button → combobox, inserts inline or abstract
+- Tables using Shift+6 or UI button → inserts a default 3×3 table with a header row at the cursor
 
 System must support:
 
 - autocomplete / search in floating panels
 - creation on-the-fly (topics and sages only)
-- sidebar panel showing all current topics/sages with delete
+- sidebar panel showing all current topics / sages / sources / references with delete
 - Wikipedia-style `[n]` footnotes for sources with footer
 - Sefaria API tooltip on source hover
 - "Missing Source" for uncatalogued references
+
+## Tables
+
+Tables are stored as standard TipTap table nodes inside the content JSON (no separate DB table, no snapshot tracking).
+
+Behavior:
+- Insert via toolbar "טבלה" button or Shift+6. Default size: 3 rows × 3 columns, with a header row.
+- Columns are resizable by dragging the column edge.
+- When the cursor is inside a table, the toolbar exposes a contextual table sub-toolbar with: add row, add column, delete row, delete column, merge/split cells, delete table.
+- Tables render right-to-left (Hebrew); cell text alignment defaults to right.
+- The read-only `ContentRenderer` registers the same table extensions so saved tables display identically in article view, opinion view, and any other read-only surface.
 
 ---
 
@@ -771,8 +805,9 @@ Notifications are created for:
 
 # 🖼 Image Storage
 
-- Images are stored locally on the filesystem (current phase)
+- Images are stored locally on the filesystem (current phase) under `public/uploads/images/` and are served statically by Next.js with no auth gate
 - URL field stores the relative path to the file
+- Approval-based visibility is enforced at render time only — see "Images → Visibility" above for the rule
 
 ---
 

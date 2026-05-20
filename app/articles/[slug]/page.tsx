@@ -7,10 +7,13 @@ import {
   findActiveRevisionByArticleAndUser,
 } from '@/db/revision-repository';
 import { getCurrentUser } from '@/lib/auth-utils';
+import { getImageStatusMap } from '@/lib/image-status-map';
 import { ContentRenderer } from '@/ui/components/content-renderer';
 import { StatusBadge } from '@/ui/components/status-badge';
 import { ProposeRevisionButton } from './propose-revision-button';
 import { OpinionList } from '@/ui/components/opinion-list';
+import { ContentSidebar } from '@/ui/components/tiptap-editor/content-sidebar';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function ArticlePage({
   params,
@@ -33,6 +36,11 @@ export default async function ArticlePage({
       : Promise.resolve(null),
   ]);
 
+  const isOwner = !!currentRevision && currentUser?.id === currentRevision.createdByUserId;
+  const imageStatuses = currentRevision
+    ? await getImageStatusMap(currentRevision.id)
+    : {};
+
   const snap = article.snapshot;
   const topics = Array.isArray(snap?.topicsSnapshot)
     ? (snap.topicsSnapshot as Array<{ text: string }>)
@@ -44,100 +52,110 @@ export default async function ArticlePage({
   const isVerified = currentUser?.status === 'VerifiedUser';
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
-      <div className="flex gap-6" dir="rtl">
-        {/* Main content */}
-        <div className="min-w-0 flex-1">
-          {/* Article header */}
-          <div className="mb-6">
-            <h1 className="mb-2 text-3xl font-bold">{article.title}</h1>
-            {topics.length > 0 && (
-              <p className="mb-1 text-sm text-gray-600">
-                נושאים: {topics.map((t) => t.text).join(', ')}
-              </p>
-            )}
-            {sages.length > 0 && (
-              <p className="mb-1 text-sm text-gray-600">
-                חכמים: {sages.map((s) => s.text).join(', ')}
-              </p>
-            )}
-            <div className="mt-3 flex gap-3">
-              <Link
-                href={`/articles/${slug}/revisions`}
-                className="text-sm text-blue-600 hover:underline"
-              >
-                היסטוריית גרסאות
-              </Link>
-              {isVerified && (
-                <ProposeRevisionButton
-                  articleId={article.id}
-                  slug={slug}
-                  existingActiveRevisionId={existingActiveRevision?.id ?? null}
-                />
-              )}
-            </div>
-          </div>
+    <main className="px-4 py-8" dir="rtl">
+      {/* Article header — full width above the flex layout */}
+      <div className="mb-6">
+        <h1 className="mb-2 text-3xl font-bold">{article.title}</h1>
+        {topics.length > 0 && (
+          <p className="mb-1 text-sm text-gray-600">
+            נושאים: {topics.map((t) => t.text).join(', ')}
+          </p>
+        )}
+        {sages.length > 0 && (
+          <p className="mb-1 text-sm text-gray-600">
+            חכמים: {sages.map((s) => s.text).join(', ')}
+          </p>
+        )}
+        <div className="mt-3 flex gap-3">
+          <Link
+            href={`/articles/${slug}/revisions`}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            היסטוריית גרסאות
+          </Link>
+          {isVerified && (
+            <ProposeRevisionButton
+              articleId={article.id}
+              slug={slug}
+              existingActiveRevisionId={existingActiveRevision?.id ?? null}
+            />
+          )}
+        </div>
+      </div>
 
-          {/* Article content */}
-          <div className="mb-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-            {currentRevision ? (
-              <ContentRenderer content={currentRevision.content} />
-            ) : (
-              <p className="text-gray-400">אין תוכן עדיין.</p>
-            )}
-          </div>
-
-          {/* Pending revisions */}
-          {pendingRevisions.length > 0 && (
-            <section>
-              <h2 className="mb-3 text-lg font-semibold">הצעות עדכון ממתינות</h2>
-              <ul className="space-y-2">
-                {pendingRevisions.map((rev) => (
-                  <li
-                    key={rev.id}
-                    className="flex items-center justify-between rounded-md border border-gray-200 bg-white px-4 py-3"
-                  >
-                    <div>
-                      <Link
-                        href={`/articles/${slug}/propose/${rev.id}`}
-                        className="font-medium text-blue-600 hover:underline"
-                      >
-                        {rev.title}
-                      </Link>
-                      <p className="text-xs text-gray-500">
-                        {rev.createdBy.name} ·{' '}
-                        {new Date(rev.createdAt).toLocaleDateString('he-IL')}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <StatusBadge type="requestStatus" value={rev.status} />
-                      {currentUser?.id === rev.createdByUserId && (
-                        <Link
-                          href={`/articles/${slug}/propose/${rev.id}/edit`}
-                          className="text-xs text-blue-600 hover:underline"
-                        >
-                          ערוך
-                        </Link>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </section>
+      <div className="flex gap-6">
+        {/* Article content */}
+        <div className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          {currentRevision ? (
+            <ContentRenderer
+              content={currentRevision.content}
+              isOwner={isOwner}
+              imageStatuses={imageStatuses}
+            />
+          ) : (
+            <p className="text-gray-400">אין תוכן עדיין.</p>
           )}
         </div>
 
-        {/* Opinion list sidebar */}
-        <aside className="w-72 shrink-0">
-          <OpinionList
-            slug={slug}
-            currentUserId={currentUser?.id ?? null}
-            isVerified={isVerified}
-            articleId={article.id}
-            articleCurrentRevisionId={article.currentRevisionId ?? null}
-          />
-        </aside>
+        {/* Entity sidebar (sources, topics, references, sages) */}
+        {currentRevision && article.snapshot && (
+          <aside className="w-44 shrink-0">
+            <ContentSidebar
+              readOnly
+              snapshot={article.snapshot}
+              content={currentRevision.content}
+            />
+          </aside>
+        )}
+
+        {/* Opinion list */}
+        <OpinionList
+          slug={slug}
+          currentUserId={currentUser?.id ?? null}
+          isVerified={isVerified}
+          articleId={article.id}
+          articleCurrentRevisionId={article.currentRevisionId ?? null}
+        />
       </div>
+
+      {/* Pending revisions — full width below the columns */}
+      {pendingRevisions.length > 0 && (
+        <section className="mt-8">
+          <h2 className="mb-3 text-lg font-semibold">הצעות עדכון ממתינות</h2>
+          <ul className="space-y-2">
+            {pendingRevisions.map((rev) => (
+              <li
+                key={rev.id}
+                className="flex items-center justify-between rounded-md border border-gray-200 bg-white px-4 py-3"
+              >
+                <div>
+                  <Link
+                    href={`/articles/${slug}/propose/${rev.id}`}
+                    className="font-medium text-blue-600 hover:underline"
+                  >
+                    {rev.title}
+                  </Link>
+                  <p className="text-xs text-gray-500">
+                    {rev.createdBy.name} ·{' '}
+                    {formatHebrewDate(rev.createdAt)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <StatusBadge type="requestStatus" value={rev.status} />
+                  {currentUser?.id === rev.createdByUserId && (
+                    <Link
+                      href={`/articles/${slug}/propose/${rev.id}/edit`}
+                      className="text-xs text-blue-600 hover:underline"
+                    >
+                      ערוך
+                    </Link>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </main>
   );
 }

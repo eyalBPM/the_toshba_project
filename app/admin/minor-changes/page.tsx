@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { listPendingMinorChangeRequests } from '@/db/minor-change-repository';
 import { findRevisionById } from '@/db/revision-repository';
 import { MinorChangeActions } from '@/ui/components/admin/minor-change-actions';
+import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function AdminMinorChangesPage() {
   const requests = await listPendingMinorChangeRequests();
@@ -35,7 +36,7 @@ export default async function AdminMinorChangesPage() {
                     </p>
                     <p className="text-xs text-gray-500">
                       {req.requestedBy.name} ·{' '}
-                      {new Date(req.createdAt).toLocaleDateString('he-IL')}
+                      {formatHebrewDate(req.createdAt)}
                     </p>
                   </div>
                   <MinorChangeActions

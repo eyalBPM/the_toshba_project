@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth-utils';
 import { findPrintListById } from '@/db/print-list-repository';
 import { prisma } from '@/db/prisma';
 import { listResponsesByArticle } from '@/db/opinion-repository';
+import { getImageStatusMap } from '@/lib/image-status-map';
 import { PrintListPrintView } from '@/ui/components/print-list-print-view';
 
 interface PrintSettings {
@@ -32,8 +33,8 @@ export default async function PrintListPrintPage({
 
   if (articleIds.length === 0) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-8" dir="rtl">
-        <p className="text-gray-500">לא נבחרו ערכים להדפסה.</p>
+      <main className="px-4 py-8" dir="rtl">
+        <p className="text-gray-500">לא נבחרו מאמרים להדפסה.</p>
       </main>
     );
   }
@@ -85,10 +86,15 @@ export default async function PrintListPrintPage({
         opinions = await listResponsesByArticle(article.id, currentUser.id);
       }
 
+      const imageStatuses = article.currentRevisionId
+        ? await getImageStatusMap(article.currentRevisionId)
+        : {};
+
       return {
         id: article.id,
         title: article.title,
         content,
+        imageStatuses,
         opinions: opinions.map((o) => ({
           id: o.id,
           content: o.content,
@@ -100,7 +106,7 @@ export default async function PrintListPrintPage({
   );
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
+    <main className="px-4 py-8">
       <PrintListPrintView
         articles={articleData}
         includeClusters={settings.includeClusters ?? false}

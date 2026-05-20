@@ -4,6 +4,12 @@ import { findArticleBySlug } from '@/db/article-repository';
 import { countAgreementsByRevision } from '@/db/agreement-repository';
 import { findMinorChangeRequestById } from '@/db/minor-change-repository';
 import { getCurrentUser } from '@/lib/auth-utils';
+import {
+  deriveAbstractTopics,
+  deriveAbstractSages,
+  deriveAbstractSources,
+  deriveAbstractReferences,
+} from '@/lib/derive-abstract-entries';
 import { RevisionEditor } from '@/ui/components/revision-editor';
 import type { EditorMode } from '@/ui/components/revision-editor';
 
@@ -28,12 +34,22 @@ export default async function EditLinkedRevisionPage({
   if (!currentUser) redirect(`/login?callbackUrl=/articles/${slug}/propose/${revisionId}/edit`);
   if (currentUser.id !== revision.createdByUserId) notFound();
 
-  const topics = Array.isArray(revision.snapshot.topicsSnapshot)
-    ? (revision.snapshot.topicsSnapshot as Array<{ id: string; text: string }>)
-    : [];
-  const sages = Array.isArray(revision.snapshot.sagesSnapshot)
-    ? (revision.snapshot.sagesSnapshot as Array<{ id: string; text: string }>)
-    : [];
+  const initialAbstractTopics = deriveAbstractTopics(
+    revision.snapshot.topicsSnapshot,
+    revision.content,
+  );
+  const initialAbstractSages = deriveAbstractSages(
+    revision.snapshot.sagesSnapshot,
+    revision.content,
+  );
+  const initialAbstractSources = deriveAbstractSources(
+    revision.snapshot.sourcesSnapshot,
+    revision.content,
+  );
+  const initialAbstractReferences = deriveAbstractReferences(
+    revision.snapshot.referencesSnapshot,
+    revision.content,
+  );
 
   const agreementCount = await countAgreementsByRevision(revisionId);
 
@@ -48,7 +64,7 @@ export default async function EditLinkedRevisionPage({
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
+    <main className="px-4 py-8">
       <h1 className="mb-6 text-xl font-bold">
         {editorMode === 'mcr' ? 'בקשה לשינוי מינורי' : 'עריכת הצעת עדכון'}
       </h1>
@@ -56,8 +72,10 @@ export default async function EditLinkedRevisionPage({
         revisionId={revisionId}
         initialTitle={revision.title}
         initialContent={revision.content}
-        initialTopics={topics}
-        initialSages={sages}
+        initialAbstractTopics={initialAbstractTopics}
+        initialAbstractSages={initialAbstractSages}
+        initialAbstractSources={initialAbstractSources}
+        initialAbstractReferences={initialAbstractReferences}
         status={revision.status}
         agreementCount={agreementCount}
         deleteRedirectUrl={`/articles/${slug}`}
