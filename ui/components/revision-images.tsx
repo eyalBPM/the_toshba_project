@@ -53,6 +53,8 @@ export function RevisionImages({ revisionId, currentUserId }: RevisionImagesProp
 
   if (loading || images.length === 0) return null;
 
+  const hasPending = images.some((img) => img.status === 'PendingApproval');
+
   return (
     <div className="space-y-2" dir="rtl">
       <h3 className="text-sm font-semibold text-gray-700">תמונות</h3>
@@ -88,6 +90,11 @@ export function RevisionImages({ revisionId, currentUserId }: RevisionImagesProp
           </div>
         ))}
       </div>
+      {hasPending && (
+        <p className="text-xs text-gray-500">
+          תמונות שטרם אושרו אינן גלויות למשתמשים אחרים עד לאישור הניהול.
+        </p>
+      )}
     </div>
   );
 }

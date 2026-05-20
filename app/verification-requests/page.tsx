@@ -12,7 +12,7 @@ export default async function VerificationRequestsPage() {
   const requests = await findPendingRequestsByVerifier(user.id);
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
+    <main className="px-4 py-8">
       <h1 className="mb-6 text-2xl font-bold">בקשות אימות ממתינות</h1>
 
       {requests.length === 0 ? (

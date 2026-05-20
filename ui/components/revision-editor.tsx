@@ -27,6 +27,7 @@ import { ContentSidebar } from './tiptap-editor/content-sidebar';
 import { RevisionEditorActions } from './revision-editor-actions';
 import { McrEditorActions } from './mcr-editor-actions';
 import { ConfirmDialog } from './confirm-dialog';
+import { ImageVisibilityProvider } from './image-visibility-context';
 
 export type EditorMode = 'normal' | 'mcr';
 
@@ -181,6 +182,25 @@ export function RevisionEditor({
     return () => { editor.off('update', handler); };
   }, [editor, autoSaveEnabled, triggerSave]);
 
+  // Trigger auto-save when abstract entries change (body stays the same,
+  // so the editor 'update' event does not fire). Skip the initial mount.
+  const abstractsInitializedRef = useRef(false);
+  useEffect(() => {
+    if (!autoSaveEnabled) return;
+    if (!abstractsInitializedRef.current) {
+      abstractsInitializedRef.current = true;
+      return;
+    }
+    triggerSave();
+  }, [
+    abstractTopics,
+    abstractSources,
+    abstractSages,
+    abstractReferences,
+    autoSaveEnabled,
+    triggerSave,
+  ]);
+
   // Browser warning in MCR mode
   useBeforeUnload(isMcrMode);
 
@@ -289,7 +309,9 @@ export function RevisionEditor({
                   className="prose prose-sm max-w-none px-10 py-8"
                   dir="rtl"
                 >
-                  <EditorContent editor={editor} />
+                  <ImageVisibilityProvider value={{ isOwner: true, imageStatuses: {} }}>
+                    <EditorContent editor={editor} />
+                  </ImageVisibilityProvider>
                 </div>
               </div>
             </div>

@@ -24,9 +24,9 @@ export default async function EditOpinionPage({
   if (!allowed) notFound();
 
   return (
-    <main className="px-4 py-8">
+    <main className="px-4 py-8" dir="rtl">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-bold">עריכת חוות דעת</h1>
+        <h1 className="text-xl font-bold">עריכת תגובת דעה</h1>
         <Link
           href={`/articles/${slug}/opinion/${id}`}
           className="text-sm text-blue-600 hover:underline"
@@ -34,6 +34,7 @@ export default async function EditOpinionPage({
           חזרה לצפייה
         </Link>
       </div>
+
       <OpinionEditor
         responseId={id}
         initialContent={response.content}

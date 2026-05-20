@@ -18,7 +18,7 @@ export default async function ArticleRevisionsPage({
   const approved = revisions.filter((r) => r.status === 'Approved');
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
+    <main className="px-4 py-8">
       <h1 className="mb-2 text-xl font-bold">היסטוריית גרסאות</h1>
       <p className="mb-6 text-sm text-gray-500">
         <Link href={`/articles/${slug}`} className="text-blue-600 hover:underline">

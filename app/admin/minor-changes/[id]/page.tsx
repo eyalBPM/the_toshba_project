@@ -4,6 +4,8 @@ import { findMinorChangeRequestById } from '@/db/minor-change-repository';
 import { findRevisionById } from '@/db/revision-repository';
 import { MinorChangeActions } from '@/ui/components/admin/minor-change-actions';
 import { ContentRenderer } from '@/ui/components/content-renderer';
+import { getCurrentUser } from '@/lib/auth-utils';
+import { getImageStatusMap } from '@/lib/image-status-map';
 import { formatHebrewDate } from '@/lib/hebrew-dates';
 
 export default async function AdminMinorChangeDetailPage({
@@ -15,8 +17,13 @@ export default async function AdminMinorChangeDetailPage({
   const request = await findMinorChangeRequestById(id);
   if (!request) notFound();
 
-  const revision = await findRevisionById(request.revisionId);
+  const [revision, currentUser] = await Promise.all([
+    findRevisionById(request.revisionId),
+    getCurrentUser(),
+  ]);
   const hasContentChanges = !!(request.title || request.content);
+  const isOwner = !!revision && currentUser?.id === revision.createdByUserId;
+  const imageStatuses = revision ? await getImageStatusMap(revision.id) : {};
 
   return (
     <div className={hasContentChanges ? 'max-w-6xl' : 'max-w-2xl'}>
@@ -66,14 +73,22 @@ export default async function AdminMinorChangeDetailPage({
                 <h3 className="mb-1 text-xs font-semibold text-gray-500">גרסה נוכחית</h3>
                 <div className="rounded-lg border border-gray-200 bg-white p-3 text-sm">
                   <h4 className="mb-2 text-base font-semibold">{revision.title}</h4>
-                  <ContentRenderer content={revision.content} />
+                  <ContentRenderer
+                    content={revision.content}
+                    isOwner={isOwner}
+                    imageStatuses={imageStatuses}
+                  />
                 </div>
               </div>
               <div>
                 <h3 className="mb-1 text-xs font-semibold text-blue-600">שינוי מוצע</h3>
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm">
                   <h4 className="mb-2 text-base font-semibold">{request.title ?? revision.title}</h4>
-                  <ContentRenderer content={request.content ?? revision.content} />
+                  <ContentRenderer
+                    content={request.content ?? revision.content}
+                    isOwner={isOwner}
+                    imageStatuses={imageStatuses}
+                  />
                 </div>
               </div>
             </div>

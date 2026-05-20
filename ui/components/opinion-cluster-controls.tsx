@@ -261,7 +261,7 @@ export function OpinionClusterControls({
       setCurrentClusterId(targetId);
       onClusterChanged?.(targetId);
       setMode('idle');
-      setInfo('המקבץ נמחק והחוות-דעת הועברו');
+      setInfo('המקבץ נמחק ותגובות הדעה הועברו');
     } finally {
       setBusy(false);
     }
@@ -307,7 +307,7 @@ export function OpinionClusterControls({
       ) : (
         <>
           <label className="block text-xs text-gray-600">
-            שיוך חוות הדעת למקבץ:
+            שיוך תגובת הדעה למקבץ:
             <select
               className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm disabled:opacity-50"
               value={currentClusterId}
@@ -359,8 +359,8 @@ export function OpinionClusterControls({
           {mode === 'delete' && currentCluster && (
             <div className="space-y-2 rounded-md border border-red-200 bg-white p-3">
               <p className="text-xs text-gray-700">
-                מחיקת מקבץ <strong>{currentCluster.title}</strong> ({currentCluster._count.responses} חוות דעת).
-                יש לבחור מקבץ יעד שאליו יועברו כל חוות הדעת:
+                מחיקת מקבץ <strong>{currentCluster.title}</strong> ({currentCluster._count.responses} תגובות דעה).
+                יש לבחור מקבץ יעד שאליו יועברו כל תגובות הדעה:
               </p>
               <select
                 className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm"

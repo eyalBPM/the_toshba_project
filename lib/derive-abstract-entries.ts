@@ -113,6 +113,75 @@ export function deriveBodyReferences(
 }
 
 /**
+ * Returns the set of real (non-"missing") sourceIds cited in a content tree.
+ * Used by callers that need to fetch just the cited sources from the DB
+ * (instead of pulling the full sources table).
+ */
+export function collectCitedSourceIds(content: unknown): string[] {
+  const ids = collectInlineIds(content, 'sourceCitation', 'sourceId');
+  ids.delete('missing');
+  return Array.from(ids);
+}
+
+/**
+ * Builds a snapshot purely from a TipTap content tree. Used for entities
+ * that don't persist snapshot fields of their own (currently: opinion
+ * responses) — the sidebar derives entries from whatever the body contains.
+ * Source labels require a DB lookup, so the caller passes a sourcesById map.
+ */
+export function buildSnapshotFromContent(
+  content: unknown,
+  sourcesById: Map<string, string>,
+): {
+  topicsSnapshot: SnapshotTag[];
+  sagesSnapshot: SnapshotTag[];
+  sourcesSnapshot: SourceSnapshotEntry[];
+  referencesSnapshot: ReferenceSnapshotEntry[];
+} {
+  const topics = new Map<string, SnapshotTag>();
+  const sages = new Map<string, SnapshotTag>();
+  const sources = new Map<string, SourceSnapshotEntry>();
+  const refs = new Map<string, ReferenceSnapshotEntry>();
+
+  function walk(node: TipTapNode | unknown) {
+    if (!node || typeof node !== 'object') return;
+    const n = node as TipTapNode;
+    const attrs = n.attrs ?? {};
+    if (n.type === 'topicMark') {
+      const id = attrs.topicId as string | undefined;
+      if (id) topics.set(id, { id, text: (attrs.topicText as string) ?? '' });
+    } else if (n.type === 'sageMark') {
+      const id = attrs.sageId as string | undefined;
+      if (id) sages.set(id, { id, text: (attrs.sageText as string) ?? '' });
+    } else if (n.type === 'referenceMark') {
+      const articleId = attrs.articleId as string | undefined;
+      if (articleId && !refs.has(articleId)) {
+        refs.set(articleId, {
+          articleId,
+          slug: (attrs.articleSlug as string) ?? '',
+          title: (attrs.articleTitle as string) ?? '',
+        });
+      }
+    } else if (n.type === 'sourceCitation') {
+      const id = attrs.sourceId as string | undefined;
+      if (id && id !== 'missing' && !sources.has(id)) {
+        const label = sourcesById.get(id);
+        if (label !== undefined) sources.set(id, { id, label });
+      }
+    }
+    if (Array.isArray(n.content)) n.content.forEach(walk);
+  }
+  walk(content);
+
+  return {
+    topicsSnapshot: Array.from(topics.values()),
+    sagesSnapshot: Array.from(sages.values()),
+    sourcesSnapshot: Array.from(sources.values()),
+    referencesSnapshot: Array.from(refs.values()),
+  };
+}
+
+/**
  * Returns a Map<sourceId, number> mirroring `getCitationNumbers` semantics
  * (first occurrence wins; missing-source citations are excluded since they
  * have no stable id). Used by read-only view pages to label body sources in

@@ -15,7 +15,7 @@ export interface CitationEntry {
 
 /**
  * Returns all sourceCitation nodes in document order (top-to-bottom).
- * Used by NodeView (to compute [n]) and by SourceFooter.
+ * Used by NodeView (to compute [n]) and by the sources sidebar.
  */
 export function getCitationList(doc: ProseMirrorNode): CitationEntry[] {
   const entries: CitationEntry[] = [];

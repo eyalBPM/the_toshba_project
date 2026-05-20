@@ -86,7 +86,7 @@ export function PrintListForm({ printListId, initialSettings }: PrintListFormPro
               setSettings({ ...settings, includeClusters: e.target.checked })
             }
           />
-          כלול חוות דעת
+          כלול תגובות דעה
         </label>
         <div>
           <label className="text-sm font-medium text-gray-700">סדר:</label>

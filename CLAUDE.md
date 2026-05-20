@@ -306,7 +306,7 @@ Fields:
 - **Auth:** `Authorization: Bearer <secret>` header. The secret is read from `process.env.SOURCES_ADMIN_SECRET`. Missing/incorrect token → 401. Missing env var → 500.
 - **Body:** `{ sources: [{ id?, book, label, path, index }, ...] }` (Zod-validated). `id` is optional; supplying it allows idempotent re-runs (re-inserting the same `id` is silently skipped via `createMany skipDuplicates: true`). When omitted, a fresh cuid is generated and re-runs will create duplicates — callers that want idempotency MUST supply stable ids.
 - **Response:** `{ inserted: number }` with HTTP 201.
-- **Cache:** on success, the handler invalidates the `sources` cache tag so subsequent reads see the new rows.
+- **Cache:** the GET endpoint serves from an in-process memory cache in `lib/sources-cache.ts` (Next.js `unstable_cache` is unusable here — the serialized table exceeds its 2MB per-entry limit). On successful POST, the handler clears the cache so subsequent reads see the new rows. The admin endpoint `POST /api/admin/cache/reset-sources` exposes the same invalidation for manual use.
 
 Trigger: UI button or Shift+2. Searchable select shows sources by label.
 
@@ -371,7 +371,16 @@ Fields:
 - uploadedByUserId
 - status (PendingApproval | Approved | Rejected)
 
-Only approved images are visible.
+### Visibility
+
+The image file itself is served statically from `public/uploads/images/` (no auth). The "only approved images are visible" rule is enforced at **render time** in the TipTap `uploadedImage` node:
+
+- **Revision owner** (`currentUser.id === revision.createdByUserId`) — always sees the image inline in the content, regardless of status.
+- **Any other viewer** — sees the image inline only when `status === 'Approved'`. For `PendingApproval`, a placeholder is rendered in place of the `<img>` (text: `"📷 תמונה ממתינה לאישור הניהול"`). For `Rejected`, nothing is rendered at all (no placeholder).
+
+The status is NOT stored inside the TipTap content JSON. The `uploadedImage` node carries `src` and `imageId` only; the renderer looks up the current status from the DB via the `ImageVisibilityProvider` context (`isOwner`, `imageStatuses: Record<imageId, ImageStatus>`), which each page populates server-side.
+
+No per-image status indicator is shown in the body to the owner. The `RevisionImages` sidebar shows per-image status badges and, when at least one image is pending, displays the note `"תמונות שטרם אושרו אינן גלויות למשתמשים אחרים עד לאישור הניהול"`.
 
 ---
 
@@ -796,8 +805,9 @@ Notifications are created for:
 
 # 🖼 Image Storage
 
-- Images are stored locally on the filesystem (current phase)
+- Images are stored locally on the filesystem (current phase) under `public/uploads/images/` and are served statically by Next.js with no auth gate
 - URL field stores the relative path to the file
+- Approval-based visibility is enforced at render time only — see "Images → Visibility" above for the rule
 
 ---
 

@@ -37,7 +37,6 @@ export function ImageUploadButton({ editor, revisionId }: ImageUploadButtonProps
         insertImage(editor, {
           src: image.url,
           imageId: image.id,
-          status: image.status,
         });
       } else {
         const json = await res.json();

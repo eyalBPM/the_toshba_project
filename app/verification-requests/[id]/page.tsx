@@ -23,7 +23,7 @@ export default async function VerificationRequestPage({
   const canAct = isVerifier && request.status === 'Pending';
 
   return (
-    <main className="mx-auto max-w-lg px-4 py-8">
+    <main className="px-4 py-8">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">בקשת אימות</h1>
         <StatusBadge type="requestStatus" value={request.status} />

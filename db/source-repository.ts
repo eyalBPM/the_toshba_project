@@ -35,6 +35,14 @@ export async function findSourceById(id: string): Promise<DbSource | null> {
   return prisma.source.findUnique({ where: { id }, select: SOURCE_SELECT });
 }
 
+export async function findSourcesByIds(ids: string[]): Promise<DbSource[]> {
+  if (ids.length === 0) return [];
+  return prisma.source.findMany({
+    where: { id: { in: ids } },
+    select: SOURCE_SELECT,
+  });
+}
+
 export async function createManySources(
   data: CreateSourceInput[],
 ): Promise<{ count: number }> {
