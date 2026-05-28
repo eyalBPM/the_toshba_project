@@ -41,7 +41,9 @@ export default async function OpinionViewPage({
 
   const isOwner = currentUser?.id === response.userId;
 
-  const sourcesById = new Map(citedSources.map((s) => [s.id, s.label]));
+  const sourcesById = new Map(
+    citedSources.map((s) => [s.id, { label: s.label, book: s.book, index: s.index }] as const),
+  );
   const opinionSnapshot = buildSnapshotFromContent(response.content, sourcesById);
 
   return (

@@ -83,6 +83,7 @@ model User {
   missingSources              MissingSources[]
   minorChangeRequestsMade     MinorChangeRequest[]   @relation("MinorChangeRequester")
   minorChangeRequestsReviewed MinorChangeRequest[]   @relation("MinorChangeReviewer")
+  settings                    UserSettings?
 
   @@index([status])
   @@index([role])
@@ -100,6 +101,10 @@ model ArticleSnapshot {
 
   revision ArticleRevision?
   article  Article?
+
+  // NOTE: GIN indexes on the three *Snapshot JSON columns are created via the
+  // 20260520140000 migration. Prisma cannot express GIN expressions
+  // declaratively, so do not delete those indexes when running migrate dev.
 }
 
 // ─── Article ─────────────────────────────────────────────
@@ -112,6 +117,14 @@ model Article {
   snapshotId        String?  @unique
   createdByUserId   String
   createdAt         DateTime @default(now())
+  // Bumped manually whenever a new revision becomes the current one
+  // (full approval or approved minor change). NOT @updatedAt — we want
+  // the timestamp to track approved snapshot swaps, not every row write.
+  updatedAt         DateTime @default(now())
+  // Lowest Source.index among entries in the current snapshot's sourcesSnapshot.
+  // Denormalized on Article (instead of Snapshot) so the /articles list can
+  // sort without joining ArticleSnapshot. Maintained alongside updatedAt.
+  minSourceIndex    Int?
 
   currentRevision  ArticleRevision?  @relation("CurrentRevision", fields: [currentRevisionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   snapshot         ArticleSnapshot?  @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
@@ -121,6 +134,8 @@ model Article {
 
   @@index([createdByUserId])
   @@index([createdAt])
+  @@index([updatedAt])
+  @@index([minSourceIndex])
 }
 
 // ─── ArticleRevision ─────────────────────────────────────
@@ -383,6 +398,40 @@ model AuditLog {
   @@index([userId])
   @@index([action])
   @@index([createdAt])
+}
+
+// ─── UserSettings ────────────────────────────────────────
+
+model UserSettings {
+  id                String  @id @default(cuid())
+  userId            String  @unique
+  activeTableViewId String?
+
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeTableView TableView?  @relation("ActiveView", fields: [activeTableViewId], references: [id], onDelete: SetNull)
+  tableViews      TableView[] @relation("OwnedViews")
+}
+
+// ─── TableView ───────────────────────────────────────────
+
+model TableView {
+  id             String   @id @default(cuid())
+  userSettingsId String
+  name           String
+  // Feature this view applies to. Currently always "articles"; future surfaces
+  // (e.g. opinions list, revisions list) reuse the same table.
+  scope          String
+  // Free-form per-scope config: { sort: { col, dir }, filters: {...},
+  // searchIncludesContent: bool, searchText: string }. Shape validated in the
+  // application layer.
+  config         Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  userSettings UserSettings   @relation("OwnedViews", fields: [userSettingsId], references: [id], onDelete: Cascade)
+  activeFor    UserSettings[] @relation("ActiveView")
+
+  @@index([userSettingsId, scope])
 }
 
 // ─── Notification ────────────────────────────────────────

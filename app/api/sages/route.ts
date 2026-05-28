@@ -11,13 +11,12 @@ const createSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    await requireVerified();
+    // Public read: sage names appear in every article visible to anonymous
+    // visitors, so listing them anonymously isn't a leak. POST is still gated.
     const search = request.nextUrl.searchParams.get('search') ?? undefined;
     const sages = await listSages({ search });
     return apiSuccess(sages);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : '';
-    if (msg === 'UNAUTHORIZED' || msg === 'FORBIDDEN') return ApiErrors.unauthorized();
+  } catch {
     return ApiErrors.internal();
   }
 }

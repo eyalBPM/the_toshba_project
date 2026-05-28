@@ -31,6 +31,15 @@ export async function listSources(): Promise<DbSource[]> {
   });
 }
 
+export async function listDistinctBooks(): Promise<string[]> {
+  const rows = await prisma.source.findMany({
+    select: { book: true },
+    distinct: ['book'],
+    orderBy: { book: 'asc' },
+  });
+  return rows.map((r) => r.book);
+}
+
 export async function findSourceById(id: string): Promise<DbSource | null> {
   return prisma.source.findUnique({ where: { id }, select: SOURCE_SELECT });
 }
