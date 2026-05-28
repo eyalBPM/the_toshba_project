@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { getCachedSources, invalidateSourcesCache } from '@/lib/sources-cache';
+import { invalidateBooksCache } from '@/lib/books-cache';
 import { apiSuccess, ApiErrors } from '@/lib/api-error';
 import { createManySources } from '@/db/source-repository';
 
@@ -50,6 +51,7 @@ export async function POST(request: NextRequest) {
   try {
     const result = await createManySources(parsed.data.sources);
     invalidateSourcesCache();
+    invalidateBooksCache();
     return apiSuccess({ inserted: result.count }, 201);
   } catch {
     return ApiErrors.internal();

@@ -10,6 +10,7 @@ import { findRevisionById, updateRevisionContent } from '@/db/revision-repositor
 import { updateArticleCurrentRevision } from '@/db/article-repository';
 import { createAuditLog } from '@/db/audit-log-repository';
 import { createNotification } from '@/db/notification-repository';
+import { extractMinSourceIndex } from '@/domain/article/snapshot-stats';
 
 interface SnapshotFields {
   sourcesSnapshot?: unknown;
@@ -71,6 +72,7 @@ export async function approveMinorChange(input: ApproveMinorChangeInput): Promis
               updatedRevision.id,
               updatedRevision.snapshotId,
               updatedRevision.title,
+              extractMinSourceIndex(updatedRevision.snapshot.sourcesSnapshot),
             );
           }
         }

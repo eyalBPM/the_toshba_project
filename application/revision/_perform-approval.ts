@@ -15,6 +15,7 @@ import {
 import { createArticle, updateArticleCurrentRevision } from '@/db/article-repository';
 import { createAuditLog } from '@/db/audit-log-repository';
 import { createNotification } from '@/db/notification-repository';
+import { extractMinSourceIndex } from '@/domain/article/snapshot-stats';
 
 export interface PerformApprovalInput {
   revision: DbRevision;
@@ -43,6 +44,7 @@ export async function performApproval(input: PerformApprovalInput): Promise<void
     await updateRevisionStatus(revision.id, 'Approved');
 
     let articleId = revision.articleId;
+    const minSourceIndex = extractMinSourceIndex(revision.snapshot.sourcesSnapshot);
 
     // 2. Create or update article
     if (!articleId) {
@@ -61,6 +63,7 @@ export async function performApproval(input: PerformApprovalInput): Promise<void
         currentRevisionId: revision.id,
         snapshotId: revision.snapshotId,
         createdByUserId: revision.createdByUserId,
+        minSourceIndex,
       });
       articleId = article.id;
 
@@ -73,6 +76,7 @@ export async function performApproval(input: PerformApprovalInput): Promise<void
         revision.id,
         revision.snapshotId,
         revision.title,
+        minSourceIndex,
       );
     }
 

@@ -13,7 +13,7 @@ export default async function ArticlesPage() {
         {isVerified && <NewRevisionButton />}
       </div>
 
-      <ArticlesTable />
+      <ArticlesTable isAuthenticated={!!currentUser} />
     </main>
   );
 }

@@ -169,6 +169,8 @@ Fallback (IMPORTANT):
 - slug (auto-generated, unique, required)
 - currentRevisionId
 - createdAt
+- updatedAt — bumped manually on every approved-snapshot swap (new revision approved OR approved minor change). NOT Prisma `@updatedAt` — we want the timestamp to reflect *approved-content* changes, not arbitrary row writes. Powers the "last modified" column on the `/articles` table.
+- minSourceIndex — denormalized cache of the lowest `Source.index` across the current snapshot's `sourcesSnapshot` (null when the article has no sources). Maintained alongside `updatedAt` so the `/articles` table can sort by sources without scanning JSON or joining the `Source` table.
 - createdByUserId
 - sourcesSnapshot (copied from current revision)
 - topicsSnapshot (copied from current revision)
@@ -317,6 +319,14 @@ Behavior:
 - On insert: added to sourcesSnapshot. On delete: removed from snapshot
 - **Abstract support:** separate button adds source to sourcesSnapshot without inserting a citation into the body
 - **Sidebar panel:** always visible next to editor, shows all current sources with delete option. Deleting a non-abstract source also removes all of its citation nodes from the body (numbering of the remaining footnotes shifts accordingly). Abstract sources appear only in the sidebar and not in the numbered footer.
+
+### sourcesSnapshot entry shape
+
+Each entry in a revision's / article's `sourcesSnapshot` JSON array has the shape `{ id, label, book, index }`. `book` and `index` are denormalized from the `Source` table at write time so the `/articles` table can sort by `Source.index` and filter by `Source.book` without joining the `Source` table for every query. Pre-2026-05-20 snapshots that predate this denormalization are backfilled by `scripts/backfill-source-snapshots.ts`.
+
+### Books list endpoint
+
+`GET /api/sources/books` returns a deduplicated, sorted array of `Source.book` values. Used by the books filter in the `/articles` table. Served from an in-process memory cache (`lib/books-cache.ts`) and invalidated together with the sources cache (via `POST /api/sources` and `POST /api/admin/cache/reset-sources`).
 
 ### Missing Sources
 
@@ -598,6 +608,118 @@ Configurable settings:
 - whether to include clusters (opinions)
 - which articles to include
 - ordering of articles
+
+---
+
+# 📑 Articles List View (`/articles`)
+
+The `/articles` page renders all approved articles in a table whose state — sort, filters, search — is persistable per-user as a **TableView**.
+
+## Columns
+
+| Column | Source | Sort key | Filter |
+|--------|--------|----------|--------|
+| כותרת | `Article.title` | alphabetical | — |
+| מקורות | snapshot's `sourcesSnapshot` (labels joined) | `Article.minSourceIndex` (lowest `Source.index` in the snapshot) | by `Source.book` (multi-select) |
+| נושאים | snapshot's `topicsSnapshot` (texts joined) | `jsonb_array_length(topicsSnapshot)` — count of topics | by topic id (multi-select, search-as-you-type) |
+| חכמים | snapshot's `sagesSnapshot` (texts joined) | `jsonb_array_length(sagesSnapshot)` — count of sages | by sage id (multi-select, search-as-you-type) |
+| זמן שינוי אחרון | `Article.updatedAt` | by timestamp | — |
+
+## Rules
+
+- All sort / filter operations work against the **current snapshot** (no revision JOIN), except the "include content" search toggle which adds a JOIN against `ArticleRevision.content`.
+- Every change to sort, filters, or search resets pagination to the first page.
+- Quick search box matches `Article.title` (case-insensitive `ILIKE`). When the "כולל תוכן" checkbox is on, the match also runs against the current revision's `content` JSON serialized as text. The search box acts as an additional filter — combined with the other column filters via `AND`.
+- The default direction per column:
+  - title — ASC
+  - sources (`minSourceIndex`) — ASC, NULLS LAST
+  - topics — DESC (most topics first)
+  - sages — DESC
+  - updatedAt — DESC
+- All NULL sort keys are pushed to the end regardless of direction (`NULLS LAST`).
+
+## Books filter UX
+
+- Opens from the מקורות column header. The list of books is fetched once from `GET /api/sources/books` and cached client-side for the page lifecycle.
+- Multi-select with checkbox per book + a local search box (substring filter over the list).
+- "סמן הכל" selects all visible (post-search-filter) books; "נקה" clears the selection.
+- Selecting multiple books filters articles whose `sourcesSnapshot` contains an entry with ANY of the selected `book` values (OR semantics). Implemented server-side via Postgres `@>` containment queries backed by a GIN index on `ArticleSnapshot.sourcesSnapshot`.
+
+## Topics / Sages filter UX
+
+- Same combobox shape as the editor's topic/sage panels: a search input fires `GET /api/topics?search=...` (or `/api/sages?search=...`, limited to 50 matches) on debounce, and the list shows currently-selected chips at the top followed by search results.
+- Multi-select; OR semantics across the chosen entries.
+- The view config stores both `{ id, text }` per chip — the `text` is a snapshot used for chip display so the popover doesn't need a separate lookup. Server-side filtering ignores `.text` and matches on `.id` only.
+- `GET /api/topics` and `GET /api/sages` are **public reads** (no auth) so anonymous visitors can use these filters. The `POST` endpoints remain gated to verified users (existing rule).
+
+## TableView entity
+
+Per-user saved configurations of the `/articles` table.
+
+Fields:
+
+- id
+- userSettingsId (FK to `UserSettings`)
+- name (user-visible label)
+- scope (currently always `"articles"`; reserved for future surfaces like opinion lists / revision lists)
+- config (JSON — Zod-validated; see shape below)
+- createdAt
+- updatedAt (`@updatedAt`)
+
+`config` shape (validated by `articlesViewConfigSchema` in `domain/articles-list/view-config.ts`):
+
+```jsonc
+{
+  "sort":     { "col": "updatedAt" | "title" | "sources" | "topics" | "sages",
+                "dir": "asc" | "desc" },
+  "filters":  { "books":  ["string", ...],
+                "topics": [{ "id": "string", "text": "string" }, ...],
+                "sages":  [{ "id": "string", "text": "string" }, ...] },
+  "search":   { "text": "string", "includeContent": false }
+}
+```
+
+Mutations:
+
+- `POST /api/user/table-views` — `{ name, config }` → creates a new view in scope `articles`. Sets the new view as the active view if the user has none.
+- `PATCH /api/user/table-views/:id` — `{ name?, config? }` (at least one). Only the view's owner can mutate.
+- `DELETE /api/user/table-views/:id` — owner only. If the view was the active one, `UserSettings.activeTableViewId` is cleared via the FK `ON DELETE SET NULL`.
+- `POST /api/user/settings/active-view` — `{ tableViewId: string | null }`. Switches the active view (or back to default with `null`).
+
+## Default view (UI-only)
+
+There is a synthetic "ברירת מחדל" view shown to every user (including unauthenticated). It is **not** stored in the DB — it is the sentinel for `UserSettings.activeTableViewId === null`.
+
+- Default config: `{ sort: { col: 'updatedAt', dir: 'desc' }, filters: { books: [], topics: [], sages: [] }, search: { text: '', includeContent: false } }`.
+- Anonymous users always sit on the default view and cannot save.
+- Logged-in users on the default view who change sort / filter / search are tracked as **dirty**; a "💾 שמור כמבט חדש" button appears that opens a dialog to name and persist the current config as a new TableView (which then becomes active). The dirty state is local to the session — refreshing the page returns to clean default.
+
+## Persistence behavior
+
+- When a saved view is active, every sort/filter/search mutation **auto-saves** to that view via debounced `PATCH /api/user/table-views/:id` (~500ms idle).
+- When the default view is active, mutations stay client-side until the user explicitly saves.
+
+## UserSettings entity
+
+1:1 with User. Lazy-created on first access via `GET /api/user/settings/articles-view`.
+
+Fields:
+
+- id
+- userId (unique FK to `User`, `onDelete: Cascade`)
+- activeTableViewId — nullable FK to `TableView` (`onDelete: SET NULL`). `null` ⇒ default view.
+
+## API contract for `/api/articles`
+
+`GET /api/articles` accepts:
+
+- Legacy params (unchanged): `cursor`, `limit`, `search`. When **none** of the new params below are present, the endpoint preserves its legacy behavior (cursor-by-id pagination, ordered by `createdAt DESC`) for the article autocomplete consumers.
+- Table-mode params (any of these triggers the new code path):
+  - `sort` ∈ {title, sources, topics, sages, updatedAt}
+  - `dir` ∈ {asc, desc}
+  - `books`, `topicIds`, `sageIds` — comma-separated lists
+  - `searchInContent` ∈ {`"1"`, `"true"`}
+- In table mode, `cursor` is interpreted as an integer offset (offset-pagination). The response includes `{ items, nextCursor, total }`; `nextCursor` is the next offset as a string or `null` when the page is the last.
 
 ---
 

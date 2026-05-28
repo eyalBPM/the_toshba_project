@@ -23,10 +23,19 @@ export interface ReferenceTag {
   title: string;
 }
 
+export interface SourceSnapshotItem {
+  id: string;
+  label: string;
+  // Denormalized at write time from the Source table so the /articles list
+  // can sort by Source.index and filter by Source.book against the snapshot.
+  book?: string;
+  index?: number;
+}
+
 export interface EditorSnapshot {
   topicsSnapshot: SnapshotTag[];
   sagesSnapshot: SnapshotTag[];
-  sourcesSnapshot: { id: string; label: string }[];
+  sourcesSnapshot: SourceSnapshotItem[];
   referencesSnapshot: ReferenceTag[];
   contentLength: number;
 }
@@ -96,18 +105,36 @@ function deriveSnapshotFromDoc(
     if (!refsMap.has(r.articleId)) refsMap.set(r.articleId, r);
   }
 
-  // Build sourcesSnapshot from citations in document order (real sources only)
+  // Build sourcesSnapshot from citations in document order (real sources only).
+  // Each entry is enriched with book + index from the Source table so the
+  // /articles list view can sort/filter without joining the Source table.
   const citations = getCitationList(doc);
-  const sourcesMap = new Map<string, { id: string; label: string }>();
+  const sourcesMap = new Map<string, SourceSnapshotItem>();
   for (const c of citations) {
     if (c.sourceId === 'missing') continue;
     if (sourcesMap.has(c.sourceId)) continue;
     const src = sources.find((s) => s.id === c.sourceId);
-    if (src) sourcesMap.set(c.sourceId, { id: src.id, label: src.label });
+    if (src) {
+      sourcesMap.set(c.sourceId, {
+        id: src.id,
+        label: src.label,
+        book: src.book,
+        index: src.index,
+      });
+    }
   }
-  // Merge abstract sources
+  // Merge abstract sources. Look up book/index from the Source table; fall
+  // back to just label if the source has been removed since the abstract was
+  // added (rare — sources are only deleted via the admin loader).
   for (const s of abstractSources) {
-    if (!sourcesMap.has(s.id)) sourcesMap.set(s.id, { id: s.id, label: s.text });
+    if (sourcesMap.has(s.id)) continue;
+    const src = sources.find((row) => row.id === s.id);
+    sourcesMap.set(
+      s.id,
+      src
+        ? { id: src.id, label: src.label, book: src.book, index: src.index }
+        : { id: s.id, label: s.text },
+    );
   }
 
   const contentLength = editor.getText().length;

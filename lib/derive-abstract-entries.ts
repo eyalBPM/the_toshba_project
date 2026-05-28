@@ -30,6 +30,12 @@ export interface ReferenceSnapshotEntry {
 export interface SourceSnapshotEntry {
   id: string;
   label: string;
+  // Denormalized at write time from the Source table. Used by the /articles
+  // list to sort by Source.index and filter by Source.book without joining.
+  // Optional because pre-2026-05-20 snapshots predate the denormalization
+  // and have not been backfilled yet (see scripts/backfill-source-snapshots).
+  book?: string;
+  index?: number;
 }
 
 export function deriveAbstractTopics(
@@ -123,15 +129,21 @@ export function collectCitedSourceIds(content: unknown): string[] {
   return Array.from(ids);
 }
 
+export interface SourceLookupRow {
+  label: string;
+  book: string;
+  index: number;
+}
+
 /**
  * Builds a snapshot purely from a TipTap content tree. Used for entities
  * that don't persist snapshot fields of their own (currently: opinion
  * responses) — the sidebar derives entries from whatever the body contains.
- * Source labels require a DB lookup, so the caller passes a sourcesById map.
+ * Source labels/book/index require a DB lookup, so the caller passes a map.
  */
 export function buildSnapshotFromContent(
   content: unknown,
-  sourcesById: Map<string, string>,
+  sourcesById: Map<string, SourceLookupRow>,
 ): {
   topicsSnapshot: SnapshotTag[];
   sagesSnapshot: SnapshotTag[];
@@ -165,8 +177,10 @@ export function buildSnapshotFromContent(
     } else if (n.type === 'sourceCitation') {
       const id = attrs.sourceId as string | undefined;
       if (id && id !== 'missing' && !sources.has(id)) {
-        const label = sourcesById.get(id);
-        if (label !== undefined) sources.set(id, { id, label });
+        const row = sourcesById.get(id);
+        if (row !== undefined) {
+          sources.set(id, { id, label: row.label, book: row.book, index: row.index });
+        }
       }
     }
     if (Array.isArray(n.content)) n.content.forEach(walk);
